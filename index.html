@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2048 Game</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+</head>
+<body>
+    <!-- Форма регистрации и входа -->
+    <div class="form">
+        <div class="form-toggle"></div>
+        <div class="form-panel one">
+            <div class="form-header">
+                <h1>Account Login</h1>
+            </div>
+            <div class="form-content">
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" name="username" required="required"/>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" required="required"/>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-remember">
+                            <input type="checkbox"/>Remember Me
+                        </label>
+                        <a class="form-recovery" href="#">Forgot Password?</a>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit">Log In</button>
+                    </div>
+                </form>
+                <div class="form-group">
+                    <button id="switch-to-register">Create Account</button>
+                </div>
+            </div>
+        </div>
+        <div class="form-panel two">
+            <div class="form-header">
+                <h1>Register Account</h1>
+                <button id="switch-to-login" class="back-to-login">Back to Login</button>
+            </div>
+            <div class="form-content">
+                <form id="register-form">
+                    <div class="form-group">
+                        <label for="register-username">Username</label>
+                        <input type="text" id="register-username" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-password">Password</label>
+                        <input type="password" id="register-password" name="password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-cpassword">Confirm Password</label>
+                        <input type="password" id="register-cpassword" name="cpassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-email">Email Address</label>
+                        <input type="email" id="register-email" name="email" required>
+                    </div>
+                    <div id="register-error" class="error-message" style="color: red; display: none;">
+                        Ошибка при регистрации.
+                    </div>
+                    <div class="form-group">
+                        <button type="submit">Register</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Главное меню (изначально скрыто) -->
+    <div id="main-menu" class="main-menu hidden">
+        <h1>2048</h1>
+        <div id="menu-buttons">
+            <button id="play-button">Classic</button>
+            <button id="speedrun-button">Speedrun</button>
+            <button id="best-results-button">Best Results</button>
+        </div>
+    </div>
+
+    <!-- Игровой интерфейс (изначально скрыт) -->
+    <div id="game-interface" class="container hidden">
+        <h1>2048</h1>
+        <div class="controls">
+            <button id="menu-button">Menu</button>
+            <button id="restart">Restart</button>
+            <div class="score-container">
+                <div class="score">
+                    <span>Score</span>
+                    <span id="score">0</span>
+                </div>
+                <div class="best">
+                    <span>Best</span>
+                    <span id="best">0</span>
+                </div>
+            </div>
+            <div id="timer" class="timer hidden">
+                <span>Time:</span>
+                <span id="time">00:00.000</span>
+            </div>
+        </div>
+        <div class="game-container">
+            <div class="grid"></div>
+        </div>
+        <p class="instructions">
+            Join the numbers and get to the <strong>2048 tile!</strong>
+        </p>
+    </div>
+
+    <!-- Окно лучших результатов (изначально скрыто) -->
+    <div id="best-results-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2>Best Results</h2>
+            <div id="best-results-list"></div>
+            <button id="close-modal">Close</button>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
