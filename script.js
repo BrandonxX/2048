@@ -21,6 +21,7 @@ const form = document.querySelector('.form');
 let currentUser = null; // Переменная для хранения данных пользователя
 let best = 0; // Лучший счёт пользователя
 let score = 0;
+let isFirstMove = false; // Флаг для отслеживания первого нажатия клавиши
 let speedrunBest = parseInt(localStorage.getItem('speedrunBest')) || 'N/A';
 let isSpeedrunMode = localStorage.getItem('gameMode') === 'speedrun';
 let timerInterval;
@@ -233,6 +234,7 @@ function resetGame() {
     clearInterval(timerInterval);
     timerElement.classList.add('hidden');
     isSpeedrunMode = localStorage.getItem('gameMode') === 'speedrun';
+    isFirstMove = false; // Сбрасываем флаг первого нажатия
     score = 0;
     scoreElement.textContent = score;
     timeElement.textContent = '00:00.000';
@@ -244,6 +246,7 @@ restartButton.addEventListener('click', () => {
     startGame(isSpeedrunMode);
 });
 
+
 // Инициализация сетки
 function initializeGrid() {
     grid.innerHTML = '';
@@ -254,6 +257,24 @@ function initializeGrid() {
     addRandomTile();
     addRandomTile();
     updateGrid();
+}
+
+function startGame(isSpeedrun) {
+    clearInterval(timerInterval);
+    isSpeedrunMode = isSpeedrun;
+    mainMenu.classList.add('hidden');
+    gameInterface.classList.remove('hidden');
+    menuButtons.classList.add('hidden');
+    timerElement.classList.toggle('hidden', !isSpeedrun);
+
+    if (isSpeedrun) {
+        isFirstMove = false; // Сбрасываем флаг первого нажатия
+        blockTimes = {};
+    }
+
+    score = 0;
+    scoreElement.textContent = score;
+    initializeGrid();
 }
 
 // Добавление случайной плитки
@@ -312,6 +333,12 @@ document.addEventListener('keydown', (event) => {
 
 // Движение плиток
 function moveTiles(direction) {
+
+    if (!isFirstMove && isSpeedrunMode) {
+        isFirstMove = true; // Устанавливаем флаг, что первое нажатие произошло
+        startTime = Date.now(); // Инициализация startTime
+        startTimer(); // Запуск таймера
+    }
     let moved = false;
     const cells = Array.from(grid.childNodes).map(cell => cell.textContent || 0);
     const newCells = Array(gridSize * gridSize).fill(0);
@@ -520,10 +547,18 @@ function formatTime(milliseconds) {
 
 // Запуск таймера
 function startTimer() {
-    timerInterval = setInterval(() => {
+    console.log("Таймер запущен"); // Отладочный вывод
+    let lastTime = Date.now();
+    const timeTextNode = document.createTextNode(""); // Создаем текстовый узел
+    timeElement.textContent = ""; // Очищаем содержимое
+    timeElement.appendChild(timeTextNode); // Добавляем текстовый узел
+
+    function updateTimer() {
         const currentTime = Date.now() - startTime;
-        timeElement.textContent = formatTime(currentTime);
-    }, 10);
+        timeTextNode.nodeValue = formatTime(currentTime); // Обновляем только текстовый узел
+        requestAnimationFrame(updateTimer);
+    }
+    updateTimer(); // Запуск таймера
 }
 
 // Инициализация игры

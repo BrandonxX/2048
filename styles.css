@@ -54,9 +54,10 @@ body {
 }
 
 #time {
-    font-size: 24px;
+    font-size: 22px;
     color: white;
     font-weight: bold;
+    font-family: monospace; /* Моноширинный шрифт */
 }
 
 .container.hidden {
