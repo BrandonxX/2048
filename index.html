@@ -81,37 +81,47 @@
             <button id="play-button">Classic</button>
             <button id="speedrun-button">Speedrun</button>
             <button id="best-results-button">Best Results</button>
+            <button id="logout-button">Logout</button> <!-- Кнопка выхода -->
         </div>
     </div>
 
     <!-- Игровой интерфейс (изначально скрыт) -->
-    <div id="game-interface" class="container hidden">
-        <h1>2048</h1>
-        <div class="controls">
-            <button id="menu-button">Menu</button>
-            <button id="restart">Restart</button>
-            <div class="score-container">
-                <div class="score">
-                    <span>Score</span>
-                    <span id="score">0</span>
-                </div>
-                <div class="best">
-                    <span>Best</span>
-                    <span id="best">0</span>
-                </div>
+    <!-- Игровой интерфейс -->
+<div id="game-interface" class="container hidden">
+    <h1>2048</h1>
+    <div class="controls">
+        <button id="menu-button">Menu</button>
+        <button id="restart">Restart</button>
+        <div class="score-container">
+            <div class="score">
+                <span>Score</span>
+                <span id="score">0</span>
             </div>
-            <div id="timer" class="timer hidden">
-                <span>Time:</span>
-                <span id="time">00:00.000</span>
+            <div class="best">
+                <span>Best</span>
+                <span id="best">0</span>
             </div>
         </div>
-        <div class="game-container">
+        <div id="timer" class="timer hidden">
+            <span>Time:</span>
+            <span id="time">00:00.000</span>
+        </div>
+    </div>
+    <div class="game-container">
+        <!-- Сетка игры -->
+        <div class="grid-container">
             <div class="grid"></div>
         </div>
-        <p class="instructions">
-            Join the numbers and get to the <strong>2048 tile!</strong>
-        </p>
+        <!-- Блок Block Times -->
+        <div id="block-times" class="block-times hidden">
+            <h3>Block Times</h3>
+            <div id="block-times-list"></div>
+        </div>
     </div>
+    <p class="instructions">
+        Join the numbers and get to the <strong>2048 tile!</strong>
+    </p>
+</div>
 
     <!-- Окно лучших результатов (изначально скрыто) -->
     <div id="best-results-modal" class="modal hidden">

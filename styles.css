@@ -117,17 +117,24 @@ h1 {
 }
 
 .game-container {
-    background-color: #bbada0;
-    padding: 10px;
-    border-radius: 10px;
-    display: inline-block;
+    display: flex; /* Используем flex для расположения в одной строке */
+    gap: 20px; /* Расстояние между сеткой и блоком Block Times */
+    align-items: flex-start; /* Выравниваем элементы по верхнему краю */
+    position: relative; /* Для псевдоэлемента */
 }
+
 
 .grid {
     display: grid;
     grid-template-columns: repeat(4, 100px);
     grid-template-rows: repeat(4, 100px);
     gap: 10px;
+}
+
+.grid-container {
+    background-color: #bbada0;
+    padding: 10px;
+    border-radius: 10px;
 }
 
 .grid div {
@@ -140,6 +147,7 @@ h1 {
     font-weight: bold;
     color: #776e65;
 }
+
 
 .instructions {
     margin-top: 20px;
@@ -375,4 +383,50 @@ h1 {
     transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+/* Блок Block Times */
+.block-times {
+    background-color: #bbada0;
+    padding: 10px 20px;
+    border-radius: 5px;
+    text-align: center;
+    width: 200px; /* Ширина блока */
+    box-sizing: border-box;
+}
+
+.block-times h3 {
+    margin: 0 0 10px;
+    font-size: 16px;
+    color: #eee4da;
+}
+
+#block-times-list {
+    font-size: 14px;
+    color: white;
+    font-family: monospace; /* Моноширинный шрифт для времени */
+}
+
+#block-times-list div {
+    margin: 5px 0;
+}
+
+/* Стили для блока лучших результатов */
+.best-results-block {
+    background-color: #bbada0;
+    padding: 10px 20px;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.best-results-block h3 {
+    margin: 0 0 10px;
+    font-size: 16px;
+    color: #eee4da;
+}
+
+.best-results-block p {
+    font-size: 14px;
+    color: white;
+    font-family: monospace;
+}
 

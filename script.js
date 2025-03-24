@@ -17,6 +17,7 @@ const bestResultsModal = document.getElementById('best-results-modal');
 const bestResultsList = document.getElementById('best-results-list');
 const closeModalButton = document.getElementById('close-modal');
 const form = document.querySelector('.form');
+const logoutButton = document.getElementById('logout-button');
 
 let currentUser = null; // Переменная для хранения данных пользователя
 let best = 0; // Лучший счёт пользователя
@@ -89,99 +90,99 @@ function loadBestScore(userId) {
         }
     });
 }
-    // Обработка отправки формы входа
-    $('#login-form').on('submit', function(e) {
-        e.preventDefault();
-        const username = $('#login-form input[name="username"]').val().trim();
-        const password = $('#login-form input[name="password"]').val().trim();
-    
-        // Скрываем сообщение об ошибке при новой попытке входа
-        $('#login-error').hide();
-    
-        // Базовая проверка данных
-        if (!username || !password) {
-            $('#login-error').text('Пожалуйста, заполните все поля.').show();
-            return;
-        }
-    
-        // Отправка данных на сервер
-        $.ajax({
-            url: 'http://localhost:5000/login',
-            method: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({ username, password }),
-            success: function(response) {
-                if (response.success) {
-                    currentUser = response.user; // Сохраняем данные пользователя
-                    loadBestScore(currentUser.id);
-                    // Успешный вход: скрываем форму и показываем главное меню
-                    form.classList.add('hidden');
-                    mainMenu.classList.remove('hidden');
-                } else {
-                    // Ошибка входа: показываем сообщение об ошибке
-                    $('#login-error').text(response.message || 'Неверное имя пользователя или пароль').show();
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('Ошибка:', error);
-                $('#login-error').text('Ошибка при отправке данных на сервер').show();
-            }
-        });
-    });
 
-    $(document).ready(function() {
-        // Обработка отправки формы регистрации
-        $('#register-form').on('submit', function(e) {
-            e.preventDefault();
-    
-            // Получаем данные из формы
-            const username = $('#register-username').val().trim();
-            const password = $('#register-password').val().trim();
-            const cpassword = $('#register-cpassword').val().trim();
-            const email = $('#register-email').val().trim();
-    
-            // Сброс предыдущих ошибок
-            $('#register-error').hide();
-    
-            // Валидация данных
-            if (!username || !password || !cpassword || !email) {
-                $('#register-error').text('Пожалуйста, заполните все поля.').show();
-                return;
+// Обработка отправки формы входа
+$('#login-form').on('submit', function(e) {
+    e.preventDefault();
+    const username = $('#login-form input[name="username"]').val().trim();
+    const password = $('#login-form input[name="password"]').val().trim();
+
+    // Скрываем сообщение об ошибке при новой попытке входа
+    $('#login-error').hide();
+
+    // Базовая проверка данных
+    if (!username || !password) {
+        $('#login-error').text('Пожалуйста, заполните все поля.').show();
+        return;
+    }
+
+    // Отправка данных на сервер
+    $.ajax({
+        url: 'http://localhost:5000/login',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ username, password }),
+        success: function(response) {
+            if (response.success) {
+                currentUser = response.user; // Сохраняем данные пользователя
+                loadBestScore(currentUser.id);
+                // Успешный вход: скрываем форму и показываем главное меню
+                form.classList.add('hidden');
+                mainMenu.classList.remove('hidden');
+            } else {
+                // Ошибка входа: показываем сообщение об ошибке
+                $('#login-error').text(response.message || 'Неверное имя пользователя или пароль').show();
             }
-    
-            if (password !== cpassword) {
-                $('#register-error').text('Пароли не совпадают.').show();
-                return;
-            }
-    
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(email)) {
-                $('#register-error').text('Пожалуйста, введите корректный email.').show();
-                return;
-            }
-    
-            // Если валидация прошла успешно, отправляем данные на сервер
-            $.ajax({
-                url: 'http://localhost:5000/register', // Укажите URL для регистрации
-                method: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify({ username, password, email }),
-                success: function(response) {
-                    if (response.success) {
-                        alert('Регистрация прошла успешно!');
-                        $('.form').addClass('hidden');
-                        $('#main-menu').removeClass('hidden');
-                    } else {
-                        $('#register-error').text(response.message || 'Ошибка при регистрации').show();
-                    }
-                },
-                error: function(xhr, status, error) {
-                    console.error('Ошибка:', error);
-                    $('#register-error').text('Ошибка при отправке данных на сервер').show();
-                }
-            });
-        });
+        },
+        error: function(xhr, status, error) {
+            console.error('Ошибка:', error);
+            $('#login-error').text('Ошибка при отправке данных на сервер').show();
+        }
     });
+});
+
+// Обработка отправки формы регистрации
+$('#register-form').on('submit', function(e) {
+    e.preventDefault();
+
+    // Получаем данные из формы
+    const username = $('#register-username').val().trim();
+    const password = $('#register-password').val().trim();
+    const cpassword = $('#register-cpassword').val().trim();
+    const email = $('#register-email').val().trim();
+
+    // Сброс предыдущих ошибок
+    $('#register-error').hide();
+
+    // Валидация данных
+    if (!username || !password || !cpassword || !email) {
+        $('#register-error').text('Пожалуйста, заполните все поля.').show();
+        return;
+    }
+
+    if (password !== cpassword) {
+        $('#register-error').text('Пароли не совпадают.').show();
+        return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        $('#register-error').text('Пожалуйста, введите корректный email.').show();
+        return;
+    }
+
+    // Если валидация прошла успешно, отправляем данные на сервер
+    $.ajax({
+        url: 'http://localhost:5000/register',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ username, password, email }),
+        success: function(response) {
+            if (response.success) {
+                alert('Регистрация прошла успешно!');
+                // Переключаемся на панель входа
+                $('.form-panel.two').removeClass('active'); // Скрываем панель регистрации
+                $('.form-panel.one').removeClass('hidden'); // Показываем панель входа
+            } else {
+                $('#register-error').text(response.message || 'Ошибка при регистрации').show();
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Ошибка:', error);
+            $('#register-error').text('Ошибка при отправке данных на сервер').show();
+        }
+    });
+});
 
 // Переключение между меню и игрой
 menuButton.addEventListener('click', () => {
@@ -209,6 +210,25 @@ closeModalButton.addEventListener('click', () => {
     bestResultsModal.classList.add('hidden');
 });
 
+// Обработка нажатия кнопки Restart
+restartButton.addEventListener('click', () => {
+    resetGame();
+});
+
+logoutButton.addEventListener('click', () => {
+    // Сбрасываем данные пользователя
+    currentUser = null;
+
+    // Скрываем главное меню
+    mainMenu.classList.add('hidden');
+
+    // Показываем форму входа
+    form.classList.remove('hidden');
+
+    // Сбрасываем игру
+    resetGame();
+});
+
 // Запуск игры
 function startGame(isSpeedrun) {
     clearInterval(timerInterval);
@@ -217,13 +237,26 @@ function startGame(isSpeedrun) {
     gameInterface.classList.remove('hidden');
     menuButtons.classList.add('hidden');
     timerElement.classList.toggle('hidden', !isSpeedrun);
-    
+    document.getElementById('block-times').classList.toggle('hidden', !isSpeedrun);
+
+    // Управление видимостью блока Best
+    const bestElement = document.querySelector('.best');
     if (isSpeedrun) {
-        startTime = Date.now();
-        blockTimes = {};
-        startTimer();
+        bestElement.classList.add('hidden'); // Скрываем Best в режиме Speedrun
+        blockTimes = {}; // Сброс времени появления блоков
+
+    } else {
+        bestElement.classList.remove('hidden'); // Показываем Best в режиме Classic
+        if (currentUser) {
+            loadBestScore(currentUser.id); // Загружаем лучший счет из базы данных
+        } else {
+            best = parseInt(localStorage.getItem('best')) || 0;
+            document.getElementById('best').textContent = best;
+        }
+        best = parseInt(localStorage.getItem('best')) || 0;
+        document.getElementById('best').textContent = best; // Обновляем Best
     }
-    
+
     score = 0;
     scoreElement.textContent = score;
     initializeGrid();
@@ -232,20 +265,30 @@ function startGame(isSpeedrun) {
 // Сброс игры
 function resetGame() {
     clearInterval(timerInterval);
-    timerElement.classList.add('hidden');
     isSpeedrunMode = localStorage.getItem('gameMode') === 'speedrun';
     isFirstMove = false; // Сбрасываем флаг первого нажатия
+
+    // Управление видимостью блока Best
+    const bestElement = document.querySelector('.best');
+    if (isSpeedrunMode) {
+        bestElement.classList.add('hidden'); // Скрываем Best в режиме Speedrun
+    } else {
+        bestElement.classList.remove('hidden'); // Показываем Best в режиме Classic
+    }
+
+    // Управление видимостью блока Time
+    timerElement.classList.toggle('hidden', !isSpeedrunMode); // Показываем Time только в режиме Speedrun
+
     score = 0;
     scoreElement.textContent = score;
     timeElement.textContent = '00:00.000';
+
+    // Сброс времени блоков и очистка отображения
+    blockTimes = {};
+    updateBlockTimes(); // Очищаем список времени блоков
+
     initializeGrid();
 }
-
-restartButton.addEventListener('click', () => {
-    resetGame();
-    startGame(isSpeedrunMode);
-});
-
 
 // Инициализация сетки
 function initializeGrid() {
@@ -257,24 +300,6 @@ function initializeGrid() {
     addRandomTile();
     addRandomTile();
     updateGrid();
-}
-
-function startGame(isSpeedrun) {
-    clearInterval(timerInterval);
-    isSpeedrunMode = isSpeedrun;
-    mainMenu.classList.add('hidden');
-    gameInterface.classList.remove('hidden');
-    menuButtons.classList.add('hidden');
-    timerElement.classList.toggle('hidden', !isSpeedrun);
-
-    if (isSpeedrun) {
-        isFirstMove = false; // Сбрасываем флаг первого нажатия
-        blockTimes = {};
-    }
-
-    score = 0;
-    scoreElement.textContent = score;
-    initializeGrid();
 }
 
 // Добавление случайной плитки
@@ -325,20 +350,22 @@ function getTileColor(value) {
 
 // Обработка нажатий клавиш
 document.addEventListener('keydown', (event) => {
-    if (event.key && event.key.startsWith('Arrow')) { // Добавлена проверка
+    if (event.key && event.key.startsWith('Arrow')) {
         const direction = event.key.replace('Arrow', '').toLowerCase();
+
+        // Если это первое нажатие и режим Speedrun, запускаем таймер
+        if (isSpeedrunMode && !isFirstMove) {
+            isFirstMove = true; // Устанавливаем флаг, что первое нажатие произошло
+            startTime = Date.now(); // Инициализация startTime
+            startTimer(); // Запуск таймера
+        }
+
         moveTiles(direction);
     }
 });
 
 // Движение плиток
 function moveTiles(direction) {
-
-    if (!isFirstMove && isSpeedrunMode) {
-        isFirstMove = true; // Устанавливаем флаг, что первое нажатие произошло
-        startTime = Date.now(); // Инициализация startTime
-        startTimer(); // Запуск таймера
-    }
     let moved = false;
     const cells = Array.from(grid.childNodes).map(cell => cell.textContent || 0);
     const newCells = Array(gridSize * gridSize).fill(0);
@@ -410,6 +437,7 @@ function mergeRow(row) {
                     const currentTime = Date.now() - startTime;
                     if (!blockTimes[blockValue]) {
                         blockTimes[blockValue] = currentTime;
+                        updateBlockTimes(); // Обновляем отображение времени блоков
                     }
                 }
             }
@@ -445,26 +473,51 @@ function canMerge(cells) {
 
 // Завершение игры
 function endGame(isWin) {
-    clearInterval(timerInterval);
+    clearInterval(timerInterval); // Останавливаем таймер
+
     if (isSpeedrunMode) {
         const endTime = Date.now();
-        const timeTaken = endTime - startTime;
-        if (isWin) {
-            if (speedrunBest === 'N/A' || timeTaken < speedrunBest) {
-                speedrunBest = timeTaken;
-                localStorage.setItem('speedrunBest', speedrunBest);
-            }
-            updateBestBlockTimes();
-            alert(`You won in ${formatTime(timeTaken)}! Best time: ${formatTime(speedrunBest)}`);
-        } else {
-            alert(`You didn't reach 2048 in time. Try again!`);
+        const timeTaken = endTime - startTime; // Время, затраченное на игру
+
+        // Отправляем данные на сервер для сравнения и обновления
+        if (currentUser) {
+            $.ajax({
+                url: 'http://localhost:5000/save-speedrun-result',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    userId: currentUser.id,
+                    bestTime: timeTaken,
+                    bestBlockTimes: blockTimes
+                }),
+                success: function(response) {
+                    if (response.success) {
+                        console.log('Данные успешно сохранены');
+                    } else {
+                        console.error('Время не лучше предыдущего');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Ошибка:', error);
+                }
+            });
         }
+
+        // Показываем сообщение о результате игры
+        if (isWin) {
+            alert(`You won in ${formatTime(timeTaken)}!`);
+        } else {
+            alert(`Game Over! You didn't reach 2048 in time. Try again!`);
+        }
+
+        // Показываем время появления блоков
         showBlockTimes();
     } else {
+        // Логика для режима Classic
         if (score > best) {
-            best = score;
-            localStorage.setItem('best', best);
-            bestElement.textContent = best;
+            best = score; // Обновляем лучший счёт
+            localStorage.setItem('best', best); // Сохраняем лучший счёт в localStorage
+            document.getElementById('best').textContent = best; // Обновляем блок Best
 
             // Сохраняем счёт на сервере, если пользователь авторизован
             if (currentUser) {
@@ -486,53 +539,109 @@ function endGame(isWin) {
                 });
             }
         }
+
+        // Показываем сообщение о завершении игры
         alert('Game Over!');
     }
 }
 
-// Обновление лучшего времени для блоков
-function updateBestBlockTimes() {
-    for (const [block, time] of Object.entries(blockTimes)) {
-        if (!bestBlockTimes[block] || time < bestBlockTimes[block]) {
-            bestBlockTimes[block] = time;
-        }
-    }
-    localStorage.setItem('bestBlockTimes', JSON.stringify(bestBlockTimes));
-}
+// Обновление времени появления блоков
+function updateBlockTimes() {
+    const blockTimesList = document.getElementById('block-times-list');
+    blockTimesList.innerHTML = ''; // Очищаем список
 
-// Показать время появления блоков
-function showBlockTimes() {
-    let result = "Block Times:\n";
     for (const [block, time] of Object.entries(blockTimes)) {
-        result += `${block}: ${formatTime(time)}\n`;
+        const blockTimeDiv = document.createElement('div');
+        blockTimeDiv.textContent = `${block}: ${formatTime(time)}`;
+        blockTimesList.appendChild(blockTimeDiv);
     }
-    alert(result);
 }
 
 // Показать лучшие результаты
 function showBestResults() {
-    bestResultsList.innerHTML = '';
-    const classicBestDiv = document.createElement('div');
-    classicBestDiv.classList.add('best-results-block');
-    classicBestDiv.innerHTML = `
-        <h3>Classic Mode Best Score</h3>
-        <p>${best}</p>
-    `;
-    bestResultsList.appendChild(classicBestDiv);
+    bestResultsList.innerHTML = ''; // Очищаем список
 
-    const speedrunBestDiv = document.createElement('div');
-    speedrunBestDiv.classList.add('best-results-block');
-    speedrunBestDiv.innerHTML = `
-        <h3>Speedrun Mode Best Times</h3>
-    `;
-    const blocks = [8, 16, 32, 64, 128, 256, 512, 1024, 2048];
-    blocks.forEach(block => {
-        const time = bestBlockTimes[block] ? formatTime(bestBlockTimes[block]) : 'N/A';
-        const blockTimeDiv = document.createElement('div');
-        blockTimeDiv.textContent = `${block}: ${time}`;
-        speedrunBestDiv.appendChild(blockTimeDiv);
-    });
-    bestResultsList.appendChild(speedrunBestDiv);
+    if (currentUser) {
+        // Загружаем данные с сервера
+        $.ajax({
+            url: `http://localhost:5000/user-results/${currentUser.id}`,
+            method: 'GET',
+            success: function(response) {
+                if (response.success) {
+                    const { best_score, best_speedrun_time, best_block_times } = response.data;
+
+                    // Всегда показываем все три блока
+                    const classicBestDiv = document.createElement('div');
+                    classicBestDiv.classList.add('best-results-block');
+                    classicBestDiv.innerHTML = `
+                        <h3>Classic Mode Best Score</h3>
+                        <p>${best_score || 'N/A'}</p>
+                    `;
+                    bestResultsList.appendChild(classicBestDiv);
+
+                    const speedrunBestDiv = document.createElement('div');
+                    speedrunBestDiv.classList.add('best-results-block');
+                    speedrunBestDiv.innerHTML = `
+                        <h3>Speedrun Mode Best Time</h3>
+                        <p>${best_speedrun_time !== null ? formatTime(best_speedrun_time) : 'N/A'}</p>
+                    `;
+                    bestResultsList.appendChild(speedrunBestDiv);
+
+                    const blockTimesDiv = document.createElement('div');
+                    blockTimesDiv.classList.add('best-results-block');
+                    blockTimesDiv.innerHTML = `
+                        <h3>Best Block Times</h3>
+                    `;
+
+                    const blockTimes = best_block_times ? JSON.parse(best_block_times) : {};
+                    if (Object.keys(blockTimes).length > 0) {
+                        Object.entries(blockTimes).forEach(([block, time]) => {
+                            const blockTimeDiv = document.createElement('div');
+                            blockTimeDiv.textContent = `${block}: ${formatTime(time)}`;
+                            blockTimesDiv.appendChild(blockTimeDiv);
+                        });
+                    } else {
+                        const noDataDiv = document.createElement('div');
+                        noDataDiv.textContent = 'N/A';
+                        blockTimesDiv.appendChild(noDataDiv);
+                    }
+
+                    bestResultsList.appendChild(blockTimesDiv);
+                } else {
+                    console.error('Ошибка при загрузке данных');
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Ошибка:', error);
+            }
+        });
+    } else {
+        // Показываем блоки с N/A для неавторизованных пользователей
+        const classicBestDiv = document.createElement('div');
+        classicBestDiv.classList.add('best-results-block');
+        classicBestDiv.innerHTML = `
+            <h3>Classic Mode Best Score</h3>
+            <p>N/A</p>
+        `;
+        bestResultsList.appendChild(classicBestDiv);
+
+        const speedrunBestDiv = document.createElement('div');
+        speedrunBestDiv.classList.add('best-results-block');
+        speedrunBestDiv.innerHTML = `
+            <h3>Speedrun Mode Best Time</h3>
+            <p>N/A</p>
+        `;
+        bestResultsList.appendChild(speedrunBestDiv);
+
+        const blockTimesDiv = document.createElement('div');
+        blockTimesDiv.classList.add('best-results-block');
+        blockTimesDiv.innerHTML = `
+            <h3>Best Block Times</h3>
+            <div>N/A</div>
+        `;
+        bestResultsList.appendChild(blockTimesDiv);
+    }
+
     bestResultsModal.classList.remove('hidden');
 }
 

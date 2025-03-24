@@ -76,7 +76,7 @@ app.post('/register', (req, res) => {
     });
 });
 
-// API для регистрации пользователя
+// API для входа пользователя
 app.post('/login', (req, res) => {
     const { username, password } = req.body;
 
@@ -104,6 +104,7 @@ app.post('/login', (req, res) => {
     });
 });
 
+// API для сохранения лучшего счёта
 app.post('/save-score', (req, res) => {
     const { userId, score } = req.body;
 
@@ -132,6 +133,7 @@ app.post('/save-score', (req, res) => {
     });
 });
 
+// API для получения лучшего счёта
 app.get('/best-score/:userId', (req, res) => {
     const userId = req.params.userId;
 
@@ -150,6 +152,71 @@ app.get('/best-score/:userId', (req, res) => {
     });
 });
 
+// API для сохранения лучшего времени и времени появления блоков в режиме Speedrun
+// API для сохранения лучшего времени и времени появления блоков в режиме Speedrun
+app.post('/save-speedrun-result', (req, res) => {
+    const { userId, bestTime, bestBlockTimes } = req.body;
+
+    // Проверяем, является ли время лучше предыдущего
+    const checkBestTimeQuery = 'SELECT best_speedrun_time, best_block_times FROM users WHERE id = ?';
+    db.query(checkBestTimeQuery, [userId], (err, results) => {
+        if (err) {
+            return res.status(500).json({ success: false, message: 'Ошибка при проверке лучшего времени' });
+        }
+
+        const currentBestTime = results[0].best_speedrun_time;
+        const currentBlockTimes = JSON.parse(results[0].best_block_times || '{}');
+
+        // Сравниваем время появления блоков
+        const updatedBlockTimes = { ...currentBlockTimes };
+
+        for (const [block, time] of Object.entries(bestBlockTimes)) {
+            if (!currentBlockTimes[block] || time < currentBlockTimes[block]) {
+                updatedBlockTimes[block] = time; // Обновляем время, если оно лучше
+            }
+        }
+
+        // Если текущее время лучше или есть обновления в Block Times, обновляем данные
+        if (currentBestTime === null || bestTime < currentBestTime || JSON.stringify(updatedBlockTimes) !== JSON.stringify(currentBlockTimes)) {
+            const updateQuery = 'UPDATE users SET best_speedrun_time = ?, best_block_times = ? WHERE id = ?';
+            db.query(updateQuery, [bestTime, JSON.stringify(updatedBlockTimes), userId], (err, results) => {
+                if (err) {
+                    return res.status(500).json({ success: false, message: 'Ошибка при обновлении данных' });
+                }
+
+                res.status(200).json({ success: true, message: 'Данные успешно обновлены' });
+            });
+        } else {
+            res.status(200).json({ success: true, message: 'Время не лучше предыдущего' });
+        }
+    });
+});
+
+// API для загрузки данных пользователя (лучший счёт, лучшее время и время появления блоков)
+app.get('/user-results/:userId', (req, res) => {
+    const userId = req.params.userId;
+
+    const getUserResultsQuery = 'SELECT best_score, best_speedrun_time, best_block_times FROM users WHERE id = ?';
+    db.query(getUserResultsQuery, [userId], (err, results) => {
+        if (err) {
+            return res.status(500).json({ success: false, message: 'Ошибка при загрузке данных пользователя' });
+        }
+
+        if (results.length === 0) {
+            return res.status(404).json({ success: false, message: 'Пользователь не найден' });
+        }
+
+        const userData = results[0];
+        res.status(200).json({ 
+            success: true, 
+            data: {
+                best_score: userData.best_score || 0,
+                best_speedrun_time: userData.best_speedrun_time !== null ? userData.best_speedrun_time : null,
+                best_block_times: userData.best_block_times || '{}'
+            }
+        });
+    });
+});
 
 // Запуск сервера
 app.listen(port, () => {
