@@ -81,6 +81,7 @@
             <button id="play-button">Classic</button>
             <button id="speedrun-button">Speedrun</button>
             <button id="best-results-button">Best Results</button>
+            <button id="rating-button">Rating</button> <!-- Новая кнопка -->
             <button id="logout-button">Logout</button> <!-- Кнопка выхода -->
         </div>
     </div>
@@ -131,6 +132,35 @@
             <button id="close-modal">Close</button>
         </div>
     </div>
+
+    <!-- Окно рейтинга -->
+<div id="rating-modal" class="modal hidden">
+    <div class="modal-content" style="width: 500px;">
+        <h2>🏆 Leaderboard</h2>
+        
+        <!-- Вкладки -->
+        <div class="rating-tabs">
+            <button class="rating-tab active" data-mode="classic">Classic</button>
+            <button class="rating-tab" data-mode="speedrun">Speedrun</button>
+            <button class="rating-tab" data-mode="blocks">Block Times</button>
+        </div>
+        
+        <!-- Контент вкладок -->
+        <div id="rating-content">
+            <!-- Заполняется JavaScript -->
+        </div>
+        
+        <!-- Пагинация -->
+        <div class="rating-pagination">
+            <button id="prev-page">⬅</button>
+            <span id="page-info">Page 1</span>
+            <button id="next-page">➡</button>
+        </div>
+        
+        <button id="close-rating-modal" class="modal-close-btn">Close</button>
+    </div>
+</div>
+<canvas id="rating-chart" width="400" height="200"></canvas>
     <script src="script.js"></script>
 </body>
 </html>

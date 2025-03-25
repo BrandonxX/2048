@@ -430,3 +430,152 @@ h1 {
     font-family: monospace;
 }
 
+/* Стили для таблицы рейтинга */
+#rating-list {
+    width: 100%;
+    margin: 20px 0;
+}
+
+.rating-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    background-color: #eee4da;
+    margin-bottom: 5px;
+    border-radius: 3px;
+}
+
+.rating-position {
+    font-weight: bold;
+    color: #776e65;
+}
+
+.rating-username {
+    flex-grow: 1;
+    text-align: left;
+    padding: 0 15px;
+}
+
+.rating-score {
+    font-weight: bold;
+    color: #f65e3b;
+}
+
+/* Стили для расширенного рейтинга */
+.rating-tabs {
+    display: flex;
+    margin-bottom: 15px;
+    border-bottom: 2px solid #bbada0;
+}
+
+.rating-tab {
+    padding: 10px 20px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    color: #776e65;
+    transition: all 0.3s;
+}
+
+.rating-tab.active {
+    color: #f65e3b;
+    border-bottom: 3px solid #f65e3b;
+    font-weight: bold;
+}
+
+.rating-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+}
+
+.rating-table th {
+    background-color: #bbada0;
+    color: white;
+    padding: 10px;
+    text-align: left;
+}
+
+.rating-table td {
+    padding: 12px 10px;
+    border-bottom: 1px solid #eee4da;
+}
+
+.rating-table tr:nth-child(even) {
+    background-color: #faf8ef;
+}
+
+.rating-table tr.current-user {
+    background-color: #edc22e;
+    color: white;
+    font-weight: bold;
+}
+
+.rating-table tr.medal-1 td:first-child::before {
+    content: "🥇";
+    margin-right: 5px;
+}
+
+.rating-table tr.medal-2 td:first-child::before {
+    content: "🥈";
+    margin-right: 5px;
+}
+
+.rating-table tr.medal-3 td:first-child::before {
+    content: "🥉";
+    margin-right: 5px;
+}
+
+.rating-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 20px 0;
+    gap: 15px;
+}
+
+.rating-pagination button {
+    background: #8f7a66;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.modal-close-btn {
+    background: #f65e3b;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 10px;
+    width: 100%;
+}
+
+.loading-spinner {
+    text-align: center;
+    padding: 20px;
+    color: #776e65;
+}
+
+.rating-table tr {
+    transition: all 0.2s ease;
+}
+.rating-table tr:hover {
+    transform: scale(1.02);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+@media (max-width: 600px) {
+    .rating-table td, .rating-table th {
+        padding: 8px 5px;
+        font-size: 14px;
+    }
+    .modal-content {
+        width: 95% !important;
+    }
+}
+
