@@ -94,34 +94,127 @@ function updateFormHeight() {
     form.style.height = activePanel.offsetHeight + 'px';
 }
 
+// Функция для воспроизведения музыки главного меню
+function playMenuMusic() {
+    if (soundState.isMusicEnabled) {
+        const menuMusic = document.getElementById('menu-music');
+        if (menuMusic) {
+            menuMusic.currentTime = 0; // Сброс времени воспроизведения
+            menuMusic.play();
+        }
+    }
+}
+
+// Состояние звука и музыки
+const soundState = {
+    isSoundEnabled: true,
+    isMusicEnabled: true
+};
+
+// Функция для переключения звука
+function toggleSound() {
+    soundState.isSoundEnabled = !soundState.isSoundEnabled;
+    document.getElementById('toggle-sound').textContent = soundState.isSoundEnabled ? 'Sound On' : 'Sound Off';
+}
+
+// Функция для переключения музыки
+function toggleMusic() {
+    soundState.isMusicEnabled = !soundState.isMusicEnabled;
+    document.getElementById('toggle-music').textContent = soundState.isMusicEnabled ? 'Music On' : 'Music Off';
+
+    if (soundState.isMusicEnabled) {
+        if (!elements.gameInterface.classList.contains('hidden')) {
+            playGameMusic();
+        } else {
+            playMenuMusic();
+        }
+    } else {
+        stopGameMusic();
+        stopMenuMusic();
+    }
+}
+
+// Функция для остановки музыки главного меню
+function stopMenuMusic() {
+    const menuMusic = document.getElementById('menu-music');
+    if (menuMusic) {
+        menuMusic.pause();
+        menuMusic.currentTime = 0;
+    }
+}
+
+// Функция для воспроизведения музыки игры
+function playGameMusic() {
+    if (soundState.isMusicEnabled) {
+        const gameMusic = document.getElementById('game-music');
+        if (gameMusic) {
+            gameMusic.currentTime = 0; // Сброс времени воспроизведения
+            gameMusic.play();
+        }
+    }
+}
+
+// Функция для остановки музыки игры
+function stopGameMusic() {
+    const gameMusic = document.getElementById('game-music');
+    if (gameMusic) {
+        gameMusic.pause();
+        gameMusic.currentTime = 0;
+    }
+}
+
 // Настройка обработчиков событий
 function setupEventListeners() {
     // Кнопки меню
-    elements.playButton.addEventListener('click', () => startGame(false));
-    elements.speedrunButton.addEventListener('click', () => startGame(true));
-    elements.menuButton.addEventListener('click', returnToMenu);
-    elements.restartButton.addEventListener('click', resetGame);
-    elements.ratingButton.addEventListener('click', showRating);
-    elements.bestResultsButton.addEventListener('click', showBestResults);
-    elements.logoutButton.addEventListener('click', logout);
-
+    elements.playButton.addEventListener('click', () => {
+        playClickSound();
+        startGame(false);
+    });
+    elements.speedrunButton.addEventListener('click', () => {
+        playClickSound();
+        startGame(true);
+    });
+    elements.menuButton.addEventListener('click', () => {
+        playClickSound();
+        returnToMenu();
+    });
+    elements.restartButton.addEventListener('click', () => {
+        playClickSound();
+        resetGame();
+    });
+    elements.ratingButton.addEventListener('click', () => {
+        playClickSound();
+        showRating();
+    });
+    elements.bestResultsButton.addEventListener('click', () => {
+        playClickSound();
+        showBestResults();
+    });
+    elements.logoutButton.addEventListener('click', () => {
+        playClickSound();
+        logout();
+    });
 
     // Модальные окна
     document.getElementById('close-modal').addEventListener('click', () => {
+        playClickSound();
         elements.bestResultsModal.classList.add('hidden');
     });
     document.getElementById('close-rating-modal').addEventListener('click', () => {
+        playClickSound();
         elements.ratingModal.classList.add('hidden');
     });
 
     // Пагинация рейтинга
     document.getElementById('prev-page').addEventListener('click', () => {
+        playClickSound();
         if (state.currentRatingPage > 1) {
             state.currentRatingPage--;
             loadRatingData();
         }
     });
     document.getElementById('next-page').addEventListener('click', () => {
+        playClickSound();
         state.currentRatingPage++;
         loadRatingData();
     });
@@ -129,6 +222,7 @@ function setupEventListeners() {
     // Вкладки рейтинга
     document.querySelectorAll('.rating-tab').forEach(tab => {
         tab.addEventListener('click', () => {
+            playClickSound();
             document.querySelectorAll('.rating-tab').forEach(t => t.classList.remove('active'));
             tab.classList.add('active');
             state.currentRatingMode = tab.dataset.mode;
@@ -143,6 +237,10 @@ function setupEventListeners() {
 
     // Управление с клавиатуры
     document.addEventListener('keydown', handleKeyPress);
+
+    // Кнопки управления звуком и музыкой
+    document.getElementById('toggle-sound').addEventListener('click', toggleSound);
+    document.getElementById('toggle-music').addEventListener('click', toggleMusic);
 }
 
 // Проверка статуса авторизации
@@ -173,6 +271,7 @@ async function handleLogin(e) {
             state.currentUser = data.user;
             document.querySelector('.form').classList.add('hidden');
             elements.mainMenu.classList.remove('hidden');
+            playClickSound
             loadUserStats();
         } else {
             showError('login-error', data.message || 'Login failed');
@@ -262,44 +361,67 @@ async function loadUserStats() {
     }
 }
 
+// Функция для воспроизведения звука нажатия
+function playClickSound() {
+    if (soundState.isSoundEnabled) {
+        const clickSound = document.getElementById('click-sound');
+        if (clickSound) {
+            clickSound.currentTime = 0; // Сброс времени воспроизведения
+            clickSound.play();
+        }
+    }
+}
+
 // Запуск игры
 function startGame(isSpeedrunMode) {
     state.isSpeedrunMode = isSpeedrunMode;
     state.score = 0;
     state.isFirstMove = false;
     state.blockTimes = {};
-    
+
     elements.score.textContent = state.score;
     elements.mainMenu.classList.add('hidden');
     elements.gameInterface.classList.remove('hidden');
-    
+
     // Настройка интерфейса для режима
     elements.timerElement.classList.toggle('hidden', !isSpeedrunMode);
     document.getElementById('block-times').classList.toggle('hidden', !isSpeedrunMode);
     document.querySelector('.best').classList.toggle('hidden', isSpeedrunMode);
-    
+
     initializeGrid();
+
+    // Остановка музыки главного меню и запуск музыки игры, если музыка включена
+    stopMenuMusic();
+    if (soundState.isMusicEnabled) {
+        playGameMusic();
+    }
 }
+
 
 // Возврат в меню
 function returnToMenu() {
     resetGame();
     elements.gameInterface.classList.add('hidden');
     elements.mainMenu.classList.remove('hidden');
-}
 
+    // Остановка музыки игры и запуск музыки главного меню, если музыка включена
+    stopGameMusic();
+    if (soundState.isMusicEnabled) {
+        playMenuMusic();
+    }
+}
 // Сброс игры
 function resetGame() {
-    clearInterval(state.timerInterval);
-    state.score = 0;
-    state.isFirstMove = false;
-    state.blockTimes = {};
+        clearInterval(state.timerInterval);
+        state.score = 0;
+        state.isFirstMove = false;
+        state.blockTimes = {};
     
-    elements.score.textContent = state.score;
-    elements.time.textContent = '00:00.000';
-    updateBlockTimesDisplay();
+        elements.score.textContent = state.score;
+        elements.time.textContent = '00:00.000';
+        updateBlockTimesDisplay();
     
-    initializeGrid();
+        initializeGrid();
 }
 
 // Инициализация сетки
@@ -324,10 +446,19 @@ function addRandomTile() {
             emptyCells.push(index);
         }
     });
-    
+
     if (emptyCells.length > 0) {
         const randomIndex = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-        elements.grid.childNodes[randomIndex].textContent = Math.random() < 0.9 ? 2 : 4;
+        const newTile = elements.grid.childNodes[randomIndex];
+        newTile.textContent = Math.random() < 0.9 ? 2 : 4;
+
+        // Добавление класса для анимации
+        newTile.classList.add('new-tile');
+
+        // Удаление класса после завершения анимации
+        setTimeout(() => {
+            newTile.classList.remove('new-tile');
+        }, 300); // Время должно совпадать с длительностью анимации
     }
 }
 
@@ -361,6 +492,22 @@ function handleKeyPress(event) {
     }
 }
 
+/// Функция для воспроизведения звука перемещения
+function playMoveSound() {
+    if (soundState.isSoundEnabled && isGameActive()) {
+        const moveSound = document.getElementById('move-sound');
+        if (moveSound) {
+            moveSound.currentTime = 0; // Сброс времени воспроизведения
+            moveSound.play();
+        }
+    }
+}
+
+// Проверка, активна ли игра
+function isGameActive() {
+    return !elements.gameInterface.classList.contains('hidden');
+}
+
 // Движение плиток
 function moveTiles(direction) {
     const cells = Array.from(elements.grid.childNodes).map(cell => cell.textContent || 0);
@@ -371,7 +518,7 @@ function moveTiles(direction) {
     if (direction === 'left') {
         for (let row = 0; row < GRID_SIZE; row++) {
             const rowCells = cells.slice(row * GRID_SIZE, (row + 1) * GRID_SIZE);
-            const mergedRow = mergeRow(rowCells);
+            const mergedRow = mergeRow(rowCells, row, false);
             for (let col = 0; col < GRID_SIZE; col++) {
                 newCells[row * GRID_SIZE + col] = mergedRow[col];
             }
@@ -379,7 +526,7 @@ function moveTiles(direction) {
     } else if (direction === 'right') {
         for (let row = 0; row < GRID_SIZE; row++) {
             const rowCells = cells.slice(row * GRID_SIZE, (row + 1) * GRID_SIZE).reverse();
-            const mergedRow = mergeRow(rowCells).reverse();
+            const mergedRow = mergeRow(rowCells, row, false).reverse();
             for (let col = 0; col < GRID_SIZE; col++) {
                 newCells[row * GRID_SIZE + col] = mergedRow[col];
             }
@@ -390,7 +537,7 @@ function moveTiles(direction) {
             for (let row = 0; row < GRID_SIZE; row++) {
                 columnCells.push(cells[row * GRID_SIZE + col]);
             }
-            const mergedColumn = mergeRow(columnCells);
+            const mergedColumn = mergeRow(columnCells, col, true);
             for (let row = 0; row < GRID_SIZE; row++) {
                 newCells[row * GRID_SIZE + col] = mergedColumn[row];
             }
@@ -401,7 +548,7 @@ function moveTiles(direction) {
             for (let row = 0; row < GRID_SIZE; row++) {
                 columnCells.push(cells[row * GRID_SIZE + col]);
             }
-            const mergedColumn = mergeRow(columnCells.reverse()).reverse();
+            const mergedColumn = mergeRow(columnCells.reverse(), col, true).reverse();
             for (let row = 0; row < GRID_SIZE; row++) {
                 newCells[row * GRID_SIZE + col] = mergedColumn[row];
             }
@@ -413,7 +560,8 @@ function moveTiles(direction) {
         elements.grid.childNodes.forEach((cell, index) => {
             cell.textContent = newCells[index] || '';
         });
-        
+
+        playMoveSound(); // Воспроизведение звука перемещения
         addRandomTile();
         updateGrid();
         checkGameOver();
@@ -421,15 +569,33 @@ function moveTiles(direction) {
 }
 
 // Слияние строки
-function mergeRow(row) {
+function mergeRow(row, rowIndex, isVertical) {
     let newRow = row.filter(x => x !== 0);
-    
+
     for (let i = 0; i < newRow.length - 1; i++) {
         if (newRow[i] === newRow[i + 1]) {
             newRow[i] *= 2;
             state.score += newRow[i];
             elements.score.textContent = state.score;
             newRow[i + 1] = 0;
+
+            // Определение индекса ячейки в сетке
+            let cellIndex;
+            if (isVertical) {
+                cellIndex = rowIndex + i * GRID_SIZE;
+            } else {
+                cellIndex = rowIndex * GRID_SIZE + i;
+            }
+
+            // Добавление класса для анимации слияния только к ячейкам с числами
+            if (newRow[i] !== 0) {
+                elements.grid.childNodes[cellIndex].classList.add('merging');
+
+                // Удаление класса после завершения анимации
+                setTimeout(() => {
+                    elements.grid.childNodes[cellIndex].classList.remove('merging');
+                }, 200); // Время должно совпадать с длительностью анимации
+            }
 
             // Запись времени появления блока в speedrun режиме
             if (state.isSpeedrunMode) {
@@ -444,12 +610,12 @@ function mergeRow(row) {
             }
         }
     }
-    
+
     newRow = newRow.filter(x => x !== 0);
     while (newRow.length < GRID_SIZE) {
         newRow.push(0);
     }
-    
+
     return newRow;
 }
 
@@ -710,5 +876,22 @@ function showError(elementId, message) {
     }
 }
 
+// Функция для Пароля
+function togglePassword(inputId, toggleIcon) {
+    const passwordInput = document.getElementById(inputId);
+
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        toggleIcon.textContent = '🙈'; // Изменяем иконку на закрытый глаз
+    } else {
+        passwordInput.type = 'password';
+        toggleIcon.textContent = '👁️'; // Возвращаем иконку на открытый глаз
+    }
+}
 // Инициализация игры при загрузке страницы
-document.addEventListener('DOMContentLoaded', initGame);
+document.addEventListener('DOMContentLoaded', () => {
+    initGame();
+    if (soundState.isMusicEnabled) {
+        playMenuMusic(); // Запуск музыки главного меню при загрузке
+    }
+});
