@@ -24,6 +24,7 @@
                     <div class="form-group">
                         <label for="password">Password</label>
                         <input type="password" id="password" name="password" required="required"/>
+                        <span class="toggle-password" onclick="togglePassword('password', this)">👁️</span>
                     </div>
                     <div class="form-group">
                         <label class="form-remember">
@@ -54,10 +55,12 @@
                     <div class="form-group">
                         <label for="register-password">Password</label>
                         <input type="password" id="register-password" name="password" required>
+                        <span class="toggle-password register-toggle" onclick="togglePassword('register-password', this)">👁️</span>
                     </div>
                     <div class="form-group">
                         <label for="register-cpassword">Confirm Password</label>
                         <input type="password" id="register-cpassword" name="cpassword" required>
+                        <span class="toggle-password register-c-toggle" onclick="togglePassword('register-cpassword', this)">👁️</span>
                     </div>
                     <div class="form-group">
                         <label for="register-email">Email Address</label>

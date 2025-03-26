@@ -579,3 +579,26 @@ h1 {
     }
 }
 
+/* Пароль */
+
+.password-container {
+    position: relative;
+    width: 200px;
+}
+.toggle-password {
+    position: absolute;
+    right: 100px;
+    top: 50%;
+    transform: translateY(-30%);
+    cursor: pointer;
+}
+
+.register-toggle { /* 45 40 */
+    top: 45%; 
+    transform: translateY(-40%);
+}
+
+.register-c-toggle {
+    top: 60%; 
+    transform: translateY(-40%);
+}

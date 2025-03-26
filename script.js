@@ -710,5 +710,17 @@ function showError(elementId, message) {
     }
 }
 
+// Функция для Пароля
+function togglePassword(inputId, toggleIcon) {
+    const passwordInput = document.getElementById(inputId);
+
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        toggleIcon.textContent = '🙈'; // Изменяем иконку на закрытый глаз
+    } else {
+        passwordInput.type = 'password';
+        toggleIcon.textContent = '👁️'; // Возвращаем иконку на открытый глаз
+    }
+}
 // Инициализация игры при загрузке страницы
 document.addEventListener('DOMContentLoaded', initGame);
