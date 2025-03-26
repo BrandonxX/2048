@@ -9,6 +9,26 @@ body {
     margin: 0;
 }
 
+#toggle-sound, #toggle-music {
+    position: absolute;
+    top: 20px;
+    left: 50px;
+    background-color: #bbada0;
+    padding: 10px 20px;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    color: #eee4da;
+    font-family: monospace;
+    transition: background-color 0.3s ease;
+    z-index: 1000;
+}
+
+#toggle-music{
+    top: 70px; /* Отступ сверху для кнопки музыки */
+}
+
 /* Главное меню */
 .main-menu {
     text-align: center;
@@ -237,7 +257,7 @@ h1 {
     position: absolute;
     top: 0;
     left: 100%;
-    background: #4285F4;
+    background: #9c8b77;
     width: 100%;
     min-height: 100%;
     padding: 60px calc(10% + 60px) 60px 60px;
@@ -258,7 +278,7 @@ h1 {
 
 .form-header h1 {
     padding: 4px 0;
-    color: #4285F4;
+    color: #9c8b77;
     font-size: 24px;
     font-weight: 700;
     text-transform: uppercase;
@@ -329,7 +349,7 @@ h1 {
 
 .form-group button {
     outline: none;
-    background: #4285F4;
+    background: #9c8b77;
     width: 100%;
     border: 0;
     border-radius: 4px;
@@ -345,12 +365,12 @@ h1 {
 
 .two .form-group button {
     background: #FFFFFF;
-    color: #4285F4;
+    color: #9c8b77;
 }
 
 /* Стили для кнопки переключения */
 #switch-to-register {
-    background: #4285F4;
+    background: #9c8b77;
     color: white;
     border: none;
     padding: 10px 20px;
@@ -362,7 +382,7 @@ h1 {
 }
 
 #switch-to-register:hover {
-    background: #357ABD;
+    background: #9c8b77;
 }
 
 /* Скрытие и отображение панелей */
@@ -374,8 +394,8 @@ h1 {
     position: absolute;
     top: 58px; /* Высота, равная заголовку */
     right: 118px; /* Отступ справа */
-    border: 2px solid #4285F4; /* Граница, как у кнопки Register */
-    color: #4285F4; /* Цвет текста, как у заголовка */
+    border: 2px solid #9c8b77; /* Граница, как у кнопки Register */
+    color: #9c8b77; /* Цвет текста, как у заголовка */
     font-size: 14px;
     cursor: pointer;
     padding: 10px 20px; /* Отступы, как у кнопки Register */
@@ -579,3 +599,67 @@ h1 {
     }
 }
 
+/* Пароль */
+
+.password-container {
+    position: relative;
+    width: 200px;
+}
+.toggle-password {
+    position: absolute;
+    right: 100px;
+    top: 50%;
+    transform: translateY(-30%);
+    cursor: pointer;
+}
+
+.register-toggle { /* 45 40 */
+    top: 45%; 
+    transform: translateY(-40%);
+}
+
+.register-c-toggle {
+    top: 60%; 
+    transform: translateY(-40%);
+}
+
+button {
+    transition: transform 0.2s ease;
+}
+
+button:hover {
+    transform: scale(0.95); /* Уменьшение кнопки при наведении */
+}
+
+/* Анимация появления новых плиток */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.5);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.new-tile {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Анимация слияния плиток */
+@keyframes mergeAnimation {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.merging {
+    animation: mergeAnimation 0.2s ease-in-out;
+}
