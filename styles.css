@@ -9,6 +9,21 @@ body {
     margin: 0;
 }
 
+/* Анимация нажатия для всех кнопок */
+/* Анимация наведения для всех кнопок */
+button {
+    transition: transform 0.2s ease-in-out;
+}
+
+button:hover {
+    transform: scale(0.95);
+}
+
+/* Убедитесь, что кнопка переключения звука также анимируется */
+#toggle-sound-button:hover {
+    transform: scale(0.95);
+}
+
 /* Главное меню */
 .main-menu {
     text-align: center;
@@ -124,17 +139,11 @@ h1 {
 }
 
 
-.grid {
+/*.grid {
     display: grid;
     grid-template-columns: repeat(4, 100px);
     grid-template-rows: repeat(4, 100px);
     gap: 10px;
-}
-
-.grid-container {
-    background-color: #bbada0;
-    padding: 10px;
-    border-radius: 10px;
 }
 
 .grid div {
@@ -147,6 +156,48 @@ h1 {
     font-weight: bold;
     color: #776e65;
 }
+*/
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(4, 100px);
+    grid-template-rows: repeat(4, 100px);
+    gap: 10px;
+}
+
+.grid div {
+    width: 100px;
+    height: 100px;
+    line-height: 100px;
+    text-align: center;
+    font-size: 36px;
+    font-weight: bold;
+    border-radius: 5px;
+    transition: transform 0.2s ease-in-out;
+}
+
+.grid div.merge {
+    animation: merge-animation 0.2s ease-in-out;
+}
+
+@keyframes merge-animation {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.grid-container {
+    background-color: #bbada0;
+    padding: 10px;
+    border-radius: 10px;
+}
+
 
 
 .instructions {
@@ -237,7 +288,7 @@ h1 {
     position: absolute;
     top: 0;
     left: 100%;
-    background: #4285F4;
+    background: #8f7a66;
     width: 100%;
     min-height: 100%;
     padding: 60px calc(10% + 60px) 60px 60px;
@@ -258,7 +309,7 @@ h1 {
 
 .form-header h1 {
     padding: 4px 0;
-    color: #4285F4;
+    color: #8f7a66;
     font-size: 24px;
     font-weight: 700;
     text-transform: uppercase;
@@ -329,7 +380,7 @@ h1 {
 
 .form-group button {
     outline: none;
-    background: #4285F4;
+    background: #8f7a66;
     width: 100%;
     border: 0;
     border-radius: 4px;
@@ -345,12 +396,12 @@ h1 {
 
 .two .form-group button {
     background: #FFFFFF;
-    color: #4285F4;
+    color: #8f7a66;
 }
 
 /* Стили для кнопки переключения */
 #switch-to-register {
-    background: #4285F4;
+    background: #8f7a66;
     color: white;
     border: none;
     padding: 10px 20px;
@@ -362,7 +413,7 @@ h1 {
 }
 
 #switch-to-register:hover {
-    background: #357ABD;
+    background: #8f7a66;
 }
 
 /* Скрытие и отображение панелей */
@@ -374,8 +425,8 @@ h1 {
     position: absolute;
     top: 58px; /* Высота, равная заголовку */
     right: 118px; /* Отступ справа */
-    border: 2px solid #4285F4; /* Граница, как у кнопки Register */
-    color: #4285F4; /* Цвет текста, как у заголовка */
+    border: 2px solid #8f7a66; /* Граница, как у кнопки Register */
+    color: #8f7a66; /* Цвет текста, как у заголовка */
     font-size: 14px;
     cursor: pointer;
     padding: 10px 20px; /* Отступы, как у кнопки Register */
@@ -409,6 +460,39 @@ h1 {
     margin: 5px 0;
 }
 
+#toggle-sound-button {
+    position: absolute; /* Абсолютное позиционирование */
+    top: 20px; /* Отступ сверху */
+    left: 50px; /* Отступ слева */
+    background-color: #bbada0;
+    padding: 10px 20px;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    color: #eee4da;
+    font-family: monospace;
+    transition: background-color 0.3s ease;
+    z-index: 1000; /* Убедитесь, что кнопка находится поверх других элементов */
+}
+
+#toggle-music-button {
+    position: absolute; /* Абсолютное позиционирование */
+    top: 70px; /* Отступ сверху */
+    left: 50px; /* Отступ слева */
+    background-color: #bbada0;
+    padding: 10px 20px;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    color: #eee4da;
+    font-family: monospace;
+    transition: background-color 0.3s ease;
+    z-index: 1000; /* Убедитесь, что кнопка находится поверх других элементов */
+}
+
+
 /* Стили для блока лучших результатов */
 .best-results-block {
     background-color: #bbada0;
@@ -429,153 +513,3 @@ h1 {
     color: white;
     font-family: monospace;
 }
-
-/* Стили для таблицы рейтинга */
-#rating-list {
-    width: 100%;
-    margin: 20px 0;
-}
-
-.rating-item {
-    display: flex;
-    justify-content: space-between;
-    padding: 10px;
-    background-color: #eee4da;
-    margin-bottom: 5px;
-    border-radius: 3px;
-}
-
-.rating-position {
-    font-weight: bold;
-    color: #776e65;
-}
-
-.rating-username {
-    flex-grow: 1;
-    text-align: left;
-    padding: 0 15px;
-}
-
-.rating-score {
-    font-weight: bold;
-    color: #f65e3b;
-}
-
-/* Стили для расширенного рейтинга */
-.rating-tabs {
-    display: flex;
-    margin-bottom: 15px;
-    border-bottom: 2px solid #bbada0;
-}
-
-.rating-tab {
-    padding: 10px 20px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 16px;
-    color: #776e65;
-    transition: all 0.3s;
-}
-
-.rating-tab.active {
-    color: #f65e3b;
-    border-bottom: 3px solid #f65e3b;
-    font-weight: bold;
-}
-
-.rating-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 15px 0;
-}
-
-.rating-table th {
-    background-color: #bbada0;
-    color: white;
-    padding: 10px;
-    text-align: left;
-}
-
-.rating-table td {
-    padding: 12px 10px;
-    border-bottom: 1px solid #eee4da;
-}
-
-.rating-table tr:nth-child(even) {
-    background-color: #faf8ef;
-}
-
-.rating-table tr.current-user {
-    background-color: #edc22e;
-    color: white;
-    font-weight: bold;
-}
-
-.rating-table tr.medal-1 td:first-child::before {
-    content: "🥇";
-    margin-right: 5px;
-}
-
-.rating-table tr.medal-2 td:first-child::before {
-    content: "🥈";
-    margin-right: 5px;
-}
-
-.rating-table tr.medal-3 td:first-child::before {
-    content: "🥉";
-    margin-right: 5px;
-}
-
-.rating-pagination {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin: 20px 0;
-    gap: 15px;
-}
-
-.rating-pagination button {
-    background: #8f7a66;
-    color: white;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 3px;
-    cursor: pointer;
-}
-
-.modal-close-btn {
-    background: #f65e3b;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 5px;
-    cursor: pointer;
-    margin-top: 10px;
-    width: 100%;
-}
-
-.loading-spinner {
-    text-align: center;
-    padding: 20px;
-    color: #776e65;
-}
-
-.rating-table tr {
-    transition: all 0.2s ease;
-}
-.rating-table tr:hover {
-    transform: scale(1.02);
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-@media (max-width: 600px) {
-    .rating-table td, .rating-table th {
-        padding: 8px 5px;
-        font-size: 14px;
-    }
-    .modal-content {
-        width: 95% !important;
-    }
-}
-
