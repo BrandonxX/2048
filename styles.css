@@ -608,7 +608,7 @@ h1 {
 .toggle-password {
     position: absolute;
     right: 100px;
-    top: 50%;
+    top: 52%;
     transform: translateY(-30%);
     cursor: pointer;
 }
