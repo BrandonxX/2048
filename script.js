@@ -94,46 +94,166 @@ function updateFormHeight() {
     form.style.height = activePanel.offsetHeight + 'px';
 }
 
+// Функция для воспроизведения музыки главного меню
+function playMenuMusic() {
+    if (soundState.isMusicEnabled) {
+        const menuMusic = document.getElementById('menu-music');
+        if (menuMusic) {
+            menuMusic.currentTime = 0; // Сброс времени воспроизведения
+            menuMusic.play();
+        }
+    }
+}
+
+// Состояние звука и музыки
+const soundState = {
+    isSoundEnabled: true,
+    isMusicEnabled: true
+};
+
+// Функция для переключения звука
+function toggleSound() {
+    soundState.isSoundEnabled = !soundState.isSoundEnabled;
+    document.getElementById('toggle-sound').textContent = soundState.isSoundEnabled ? 'Sound On' : 'Sound Off';
+}
+
+// Функция для переключения музыки
+function toggleMusic() {
+    soundState.isMusicEnabled = !soundState.isMusicEnabled;
+    document.getElementById('toggle-music').textContent = soundState.isMusicEnabled ? 'Music On' : 'Music Off';
+
+    if (soundState.isMusicEnabled) {
+        if (!elements.gameInterface.classList.contains('hidden')) {
+            playGameMusic();
+        } else {
+            playMenuMusic();
+        }
+    } else {
+        stopGameMusic();
+        stopMenuMusic();
+    }
+}
+
+// Функция для остановки музыки главного меню
+function stopMenuMusic() {
+    const menuMusic = document.getElementById('menu-music');
+    if (menuMusic) {
+        menuMusic.pause();
+        menuMusic.currentTime = 0;
+    }
+}
+
+// Функция для воспроизведения музыки игры
+function playGameMusic() {
+    if (soundState.isMusicEnabled) {
+        const gameMusic = document.getElementById('game-music');
+        if (gameMusic) {
+            gameMusic.currentTime = 0; // Сброс времени воспроизведения
+            gameMusic.play();
+        }
+    }
+}
+
+// Функция для остановки музыки игры
+function stopGameMusic() {
+    const gameMusic = document.getElementById('game-music');
+    if (gameMusic) {
+        gameMusic.pause();
+        gameMusic.currentTime = 0;
+    }
+}
+
 // Настройка обработчиков событий
 function setupEventListeners() {
     // Кнопки меню
-    elements.playButton.addEventListener('click', () => startGame(false));
-    elements.speedrunButton.addEventListener('click', () => startGame(true));
-    elements.menuButton.addEventListener('click', returnToMenu);
-    elements.restartButton.addEventListener('click', resetGame);
-    elements.ratingButton.addEventListener('click', showRating);
-    elements.bestResultsButton.addEventListener('click', showBestResults);
-    elements.logoutButton.addEventListener('click', logout);
-
+    elements.playButton.addEventListener('click', () => {
+        playClickSound();
+        startGame(false);
+    });
+    elements.speedrunButton.addEventListener('click', () => {
+        playClickSound();
+        startGame(true);
+    });
+    elements.menuButton.addEventListener('click', () => {
+        playClickSound();
+        returnToMenu();
+    });
+    elements.restartButton.addEventListener('click', () => {
+        playClickSound();
+        resetGame();
+    });
+    elements.ratingButton.addEventListener('click', () => {
+        playClickSound();
+        showRating();
+    });
+    elements.bestResultsButton.addEventListener('click', () => {
+        playClickSound();
+        showBestResults();
+    });
+    elements.logoutButton.addEventListener('click', () => {
+        playClickSound();
+        logout();
+    });
 
     // Модальные окна
     document.getElementById('close-modal').addEventListener('click', () => {
+        playClickSound();
         elements.bestResultsModal.classList.add('hidden');
     });
     document.getElementById('close-rating-modal').addEventListener('click', () => {
+        playClickSound();
+        // Сброс вкладки на Classic перед закрытием
+        document.querySelectorAll('.rating-tab').forEach(t => t.classList.remove('active'));
+        document.querySelector('.rating-tab[data-mode="classic"]').classList.add('active');
+        state.currentRatingMode = 'classic';
+        state.currentRatingPage = 1;
         elements.ratingModal.classList.add('hidden');
     });
 
     // Пагинация рейтинга
-    document.getElementById('prev-page').addEventListener('click', () => {
+    document.getElementById('prev-page').addEventListener('click', async () => {
+        playClickSound();
         if (state.currentRatingPage > 1) {
             state.currentRatingPage--;
-            loadRatingData();
+            await loadRatingData();
         }
     });
-    document.getElementById('next-page').addEventListener('click', () => {
+    
+    document.getElementById('next-page').addEventListener('click', async () => {
+        playClickSound();
         state.currentRatingPage++;
-        loadRatingData();
+        await loadRatingData();
     });
 
     // Вкладки рейтинга
+    // В функции setupEventListeners()
     document.querySelectorAll('.rating-tab').forEach(tab => {
-        tab.addEventListener('click', () => {
+        tab.addEventListener('click', async () => {
+            playClickSound();
+            
+            // Блокируем повторные нажатия во время загрузки
+            if (state.isLoading) return;
+            state.isLoading = true;
+            
+            // Показываем индикатор загрузки
+            elements.ratingContent.innerHTML = `
+                <div class="loading-spinner">
+                    <div class="loading-text">Loading ${tab.textContent} data...</div>
+                    <div class="loading-progress">Please wait</div>
+                </div>
+            `;
+            
+            // Обновляем активную вкладку
             document.querySelectorAll('.rating-tab').forEach(t => t.classList.remove('active'));
             tab.classList.add('active');
+            
+            // Сбрасываем на первую страницу
             state.currentRatingMode = tab.dataset.mode;
             state.currentRatingPage = 1;
-            loadRatingData();
+            
+            // Загружаем данные с задержкой
+            await loadRatingData();
+            state.isLoading = false;
         });
     });
 
@@ -143,6 +263,10 @@ function setupEventListeners() {
 
     // Управление с клавиатуры
     document.addEventListener('keydown', handleKeyPress);
+
+    // Кнопки управления звуком и музыкой
+    document.getElementById('toggle-sound').addEventListener('click', toggleSound);
+    document.getElementById('toggle-music').addEventListener('click', toggleMusic);
 }
 
 // Проверка статуса авторизации
@@ -170,10 +294,20 @@ async function handleLogin(e) {
         const data = await response.json();
 
         if (data.success) {
+            // Полный сброс перед установкой нового пользователя
+            state.currentUser = null;
+            state.bestScore = 0;
+            state.bestBlockTimes = {};
+            
+            // Установка нового пользователя
             state.currentUser = data.user;
+            elements.best.textContent = '0'; // Сброс перед загрузкой
+            
             document.querySelector('.form').classList.add('hidden');
             elements.mainMenu.classList.remove('hidden');
-            loadUserStats();
+            
+            // Загрузка актуальных данных пользователя
+            await loadUserStats();
         } else {
             showError('login-error', data.message || 'Login failed');
         }
@@ -235,21 +369,37 @@ async function handleRegister(e) {
 
 // Выход из системы
 function logout() {
+    // Полный сброс состояния
     state.currentUser = null;
+    state.bestScore = 0;
+    state.bestBlockTimes = {};
+    state.score = 0;
+    
+    // Сброс UI
+    elements.best.textContent = '0';
+    elements.score.textContent = '0';
+    
+    // Переключение интерфейсов
     elements.mainMenu.classList.add('hidden');
     document.querySelector('.form').classList.remove('hidden');
+    
+    // Сброс игры
     resetGame();
+    
+    // Остановка музыки игры
+    stopGameMusic();
 }
 
 // Загрузка статистики пользователя
 async function loadUserStats() {
     if (!state.currentUser) return;
-
+    
     try {
         const response = await fetch(`${API_BASE_URL}/user/${state.currentUser.id}/stats`);
         const data = await response.json();
-
+        
         if (data.success) {
+            // Всегда обновляем значение с сервера
             state.bestScore = data.stats.bestScore || 0;
             elements.best.textContent = state.bestScore;
             
@@ -262,32 +412,58 @@ async function loadUserStats() {
     }
 }
 
+// Функция для воспроизведения звука нажатия
+function playClickSound() {
+    if (soundState.isSoundEnabled) {
+        const clickSound = document.getElementById('click-sound');
+        if (clickSound) {
+            clickSound.currentTime = 0; // Сброс времени воспроизведения
+            clickSound.play();
+        }
+    }
+}
+
 // Запуск игры
 function startGame(isSpeedrunMode) {
     state.isSpeedrunMode = isSpeedrunMode;
     state.score = 0;
     state.isFirstMove = false;
     state.blockTimes = {};
-    
+
     elements.score.textContent = state.score;
     elements.mainMenu.classList.add('hidden');
     elements.gameInterface.classList.remove('hidden');
-    
+
     // Настройка интерфейса для режима
     elements.timerElement.classList.toggle('hidden', !isSpeedrunMode);
     document.getElementById('block-times').classList.toggle('hidden', !isSpeedrunMode);
     document.querySelector('.best').classList.toggle('hidden', isSpeedrunMode);
-    
+
+    // Обновление Best Score
+    if (!isSpeedrunMode && state.currentUser) {
+        loadUserStats();
+    }
+
     initializeGrid();
+    stopMenuMusic();
+    if (soundState.isMusicEnabled) {
+        playGameMusic();
+    }
 }
+
 
 // Возврат в меню
 function returnToMenu() {
     resetGame();
     elements.gameInterface.classList.add('hidden');
     elements.mainMenu.classList.remove('hidden');
-}
 
+    // Остановка музыки игры и запуск музыки главного меню, если музыка включена
+    stopGameMusic();
+    if (soundState.isMusicEnabled) {
+        playMenuMusic();
+    }
+}
 // Сброс игры
 function resetGame() {
     clearInterval(state.timerInterval);
@@ -298,6 +474,13 @@ function resetGame() {
     elements.score.textContent = state.score;
     elements.time.textContent = '00:00.000';
     updateBlockTimesDisplay();
+    
+    // Обновление Best Score
+    if (state.currentUser) {
+        loadUserStats(); // Загружаем актуальные данные с сервера
+    } else {
+        elements.best.textContent = state.bestScore; // Используем локальное значение
+    }
     
     initializeGrid();
 }
@@ -324,10 +507,19 @@ function addRandomTile() {
             emptyCells.push(index);
         }
     });
-    
+
     if (emptyCells.length > 0) {
         const randomIndex = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-        elements.grid.childNodes[randomIndex].textContent = Math.random() < 0.9 ? 2 : 4;
+        const newTile = elements.grid.childNodes[randomIndex];
+        newTile.textContent = Math.random() < 0.9 ? 2 : 4;
+
+        // Добавление класса для анимации
+        newTile.classList.add('new-tile');
+
+        // Удаление класса после завершения анимации
+        setTimeout(() => {
+            newTile.classList.remove('new-tile');
+        }, 300); // Время должно совпадать с длительностью анимации
     }
 }
 
@@ -361,6 +553,22 @@ function handleKeyPress(event) {
     }
 }
 
+/// Функция для воспроизведения звука перемещения
+function playMoveSound() {
+    if (soundState.isSoundEnabled && isGameActive()) {
+        const moveSound = document.getElementById('move-sound');
+        if (moveSound) {
+            moveSound.currentTime = 0; // Сброс времени воспроизведения
+            moveSound.play();
+        }
+    }
+}
+
+// Проверка, активна ли игра
+function isGameActive() {
+    return !elements.gameInterface.classList.contains('hidden');
+}
+
 // Движение плиток
 function moveTiles(direction) {
     const cells = Array.from(elements.grid.childNodes).map(cell => cell.textContent || 0);
@@ -371,7 +579,7 @@ function moveTiles(direction) {
     if (direction === 'left') {
         for (let row = 0; row < GRID_SIZE; row++) {
             const rowCells = cells.slice(row * GRID_SIZE, (row + 1) * GRID_SIZE);
-            const mergedRow = mergeRow(rowCells);
+            const mergedRow = mergeRow(rowCells, row, false);
             for (let col = 0; col < GRID_SIZE; col++) {
                 newCells[row * GRID_SIZE + col] = mergedRow[col];
             }
@@ -379,7 +587,7 @@ function moveTiles(direction) {
     } else if (direction === 'right') {
         for (let row = 0; row < GRID_SIZE; row++) {
             const rowCells = cells.slice(row * GRID_SIZE, (row + 1) * GRID_SIZE).reverse();
-            const mergedRow = mergeRow(rowCells).reverse();
+            const mergedRow = mergeRow(rowCells, row, false).reverse();
             for (let col = 0; col < GRID_SIZE; col++) {
                 newCells[row * GRID_SIZE + col] = mergedRow[col];
             }
@@ -390,7 +598,7 @@ function moveTiles(direction) {
             for (let row = 0; row < GRID_SIZE; row++) {
                 columnCells.push(cells[row * GRID_SIZE + col]);
             }
-            const mergedColumn = mergeRow(columnCells);
+            const mergedColumn = mergeRow(columnCells, col, true);
             for (let row = 0; row < GRID_SIZE; row++) {
                 newCells[row * GRID_SIZE + col] = mergedColumn[row];
             }
@@ -401,7 +609,7 @@ function moveTiles(direction) {
             for (let row = 0; row < GRID_SIZE; row++) {
                 columnCells.push(cells[row * GRID_SIZE + col]);
             }
-            const mergedColumn = mergeRow(columnCells.reverse()).reverse();
+            const mergedColumn = mergeRow(columnCells.reverse(), col, true).reverse();
             for (let row = 0; row < GRID_SIZE; row++) {
                 newCells[row * GRID_SIZE + col] = mergedColumn[row];
             }
@@ -413,7 +621,8 @@ function moveTiles(direction) {
         elements.grid.childNodes.forEach((cell, index) => {
             cell.textContent = newCells[index] || '';
         });
-        
+
+        playMoveSound(); // Воспроизведение звука перемещения
         addRandomTile();
         updateGrid();
         checkGameOver();
@@ -421,15 +630,38 @@ function moveTiles(direction) {
 }
 
 // Слияние строки
-function mergeRow(row) {
+function mergeRow(row, rowIndex, isVertical) {
     let newRow = row.filter(x => x !== 0);
-    
+
     for (let i = 0; i < newRow.length - 1; i++) {
         if (newRow[i] === newRow[i + 1]) {
             newRow[i] *= 2;
             state.score += newRow[i];
             elements.score.textContent = state.score;
+            
+            // Автоматическое обновление Best Score
+            if (state.score > state.bestScore) {
+                state.bestScore = state.score;
+                elements.best.textContent = state.bestScore;
+            }
+            
             newRow[i + 1] = 0;
+
+            // Определение индекса ячейки в сетке
+            let cellIndex;
+            if (isVertical) {
+                cellIndex = rowIndex + i * GRID_SIZE;
+            } else {
+                cellIndex = rowIndex * GRID_SIZE + i;
+            }
+
+            // Анимация слияния
+            if (newRow[i] !== 0) {
+                elements.grid.childNodes[cellIndex].classList.add('merging');
+                setTimeout(() => {
+                    elements.grid.childNodes[cellIndex].classList.remove('merging');
+                }, 200);
+            }
 
             // Запись времени появления блока в speedrun режиме
             if (state.isSpeedrunMode) {
@@ -444,12 +676,12 @@ function mergeRow(row) {
             }
         }
     }
-    
+
     newRow = newRow.filter(x => x !== 0);
     while (newRow.length < GRID_SIZE) {
         newRow.push(0);
     }
-    
+
     return newRow;
 }
 
@@ -477,46 +709,68 @@ function canMerge(cells) {
 
 // Завершение игры
 async function endGame(isWin) {
+    // Останавливаем таймер
     clearInterval(state.timerInterval);
-    
+
+    // Воспроизводим звук победы/поражения
+    if (soundState.isSoundEnabled) {
+        const sound = document.getElementById(isWin ? 'win-sound' : 'lose-sound');
+        if (sound) {
+            sound.currentTime = 0;
+            sound.play();
+        }
+    }
+
     if (state.isSpeedrunMode) {
         const endTime = Date.now();
         const timeTaken = endTime - state.startTime;
-        
-        if (isWin) {
-            alert(`You won in ${formatTime(timeTaken)}!`);
-        } else {
-            alert('Game Over! You didn\'t reach 2048 in time.');
-        }
-        
-        // Сохранение результатов speedrun
+        const formattedTime = formatTime(timeTaken);
+
+        // Сохраняем результаты Speedrun
         if (state.currentUser) {
             try {
-                await fetch(`${API_BASE_URL}/save-speedrun`, {
+                // Сохраняем время Speedrun (если это победа)
+                if (isWin) {
+                    await fetch(`${API_BASE_URL}/save-speedrun-time`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            userId: state.currentUser.id,
+                            time: timeTaken
+                        })
+                    });
+                }
+
+                // Сохраняем время блоков
+                await fetch(`${API_BASE_URL}/save-block-times`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
                         userId: state.currentUser.id,
-                        time: timeTaken,
                         blockTimes: state.blockTimes
                     })
                 });
+
             } catch (error) {
-                console.error('Failed to save speedrun results:', error);
+                console.error('Error saving speedrun results:', error);
             }
         }
+
+        // Показываем модальное окно с результатами Speedrun
+        showSpeedrunResultModal(isWin, formattedTime);
     } else {
-        // Логика для классического режима
+        // Логика для Classic режима
         if (state.score > state.bestScore) {
             state.bestScore = state.score;
             elements.best.textContent = state.bestScore;
-            
-            // Сохранение счета на сервере
+        
             if (state.currentUser) {
                 try {
-                    await fetch(`${API_BASE_URL}/save-score`, {
+                    const response = await fetch(`${API_BASE_URL}/save-score`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
@@ -526,14 +780,152 @@ async function endGame(isWin) {
                             score: state.score
                         })
                     });
+                    
+                    const result = await response.json();
+                    if (result.success) {
+                        await loadUserStats(); // Принудительно обновляем статистику
+                    }
                 } catch (error) {
-                    console.error('Failed to save score:', error);
+                    console.error('Error saving score:', error);
                 }
+            } else {
+                // Для гостей сохраняем в localStorage
+                localStorage.setItem('bestScore', state.bestScore);
             }
         }
-        
-        alert('Game Over!');
+
+        // Показываем модальное окно с результатами Classic
+        showGameOverModal(isWin, state.score);
     }
+
+    // Обновляем статистику пользователя
+    await loadUserStats();
+}
+
+// Сохранение лучшего счета (Classic режим)
+async function saveBestScore() {
+    if (!state.currentUser) return false;
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/save-score`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                userId: state.currentUser.id,
+                score: state.bestScore
+            })
+        });
+
+        const data = await response.json();
+        return data.success;
+    } catch (error) {
+        console.error('Error saving best score:', error);
+        return false;
+    }
+}
+
+// Сохранение результатов Speedrun
+async function saveSpeedrunResult(timeTaken, isWin) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/save-speedrun-result`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                userId: state.currentUser.id,
+                time: timeTaken,
+                isWin: isWin,
+                blockTimes: state.blockTimes
+            })
+        });
+
+        const data = await response.json();
+        if (!data.success) {
+            console.error('Failed to save speedrun result:', data.message);
+        }
+    } catch (error) {
+        console.error('Error saving speedrun result:', error);
+    }
+}
+
+// Новая функция для шаринга результатов
+function shareResult(time, isWin) {
+    const text = isWin 
+        ? `I completed 2048 speedrun in ${time}! Can you beat my time?` 
+        : `I played 2048 speedrun and got ${time}. Try to beat it!`;
+    
+    if (navigator.share) {
+        navigator.share({
+            title: 'My 2048 Speedrun Result',
+            text: text,
+            url: window.location.href
+        }).catch(err => {
+            console.log('Error sharing:', err);
+            copyToClipboard(text);
+        });
+    } else {
+        copyToClipboard(text);
+        alert('Result copied to clipboard!');
+    }
+}
+
+// Вспомогательная функция для копирования в буфер обмена
+function copyToClipboard(text) {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+}
+
+// Функция для загрузки статистики пользователя (обновленная)
+async function loadUserStats() {
+    if (!state.currentUser) return;
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/user/${state.currentUser.id}/stats`);
+        const data = await response.json();
+
+        if (data.success) {
+            // Обновляем только если серверное значение больше текущего
+            if (data.stats.bestScore > state.bestScore) {
+                state.bestScore = data.stats.bestScore;
+                elements.best.textContent = state.bestScore;
+            }
+            
+            if (data.stats.bestBlockTimes) {
+                state.bestBlockTimes = data.stats.bestBlockTimes;
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load user stats:', error);
+    }
+}
+
+// Функция сброса игры (обновленная)
+function resetGame() {
+    clearInterval(state.timerInterval);
+    state.score = 0;
+    state.isFirstMove = false;
+    state.blockTimes = {};
+    
+    elements.score.textContent = state.score;
+    elements.time.textContent = '00:00.000';
+    updateBlockTimesDisplay();
+    
+    // Для авторизованных пользователей загружаем актуальные данные
+    if (state.currentUser) {
+        loadUserStats();
+    } else {
+        // Для гостей просто обновляем отображение
+        elements.best.textContent = state.bestScore;
+    }
+    
+    initializeGrid();
 }
 
 // Запуск таймера
@@ -590,15 +982,20 @@ async function showBestResults() {
 }
 
 // Отрисовка лучших результатов
-function renderBestResults(stats) {
+function renderBestResults() {
     elements.bestResultsList.innerHTML = '';
     
+    // Всегда используем актуальные данные из state
+    const bestScore = state.bestScore;
+    const bestSpeedrunTime = state.bestBlockTimes['2048']?.time;
+    const bestBlockTimes = state.bestBlockTimes;
+
     // Classic Mode
     const classicDiv = document.createElement('div');
     classicDiv.className = 'best-results-block';
     classicDiv.innerHTML = `
         <h3>Classic Mode</h3>
-        <p>${stats?.bestScore || 'N/A'}</p>
+        <p>Best Score: ${bestScore ?? 'N/A'}</p>
     `;
     elements.bestResultsList.appendChild(classicDiv);
     
@@ -607,7 +1004,7 @@ function renderBestResults(stats) {
     speedrunDiv.className = 'best-results-block';
     speedrunDiv.innerHTML = `
         <h3>Speedrun Mode</h3>
-        <p>${stats?.bestSpeedrunTime ? formatTime(stats.bestSpeedrunTime) : 'N/A'}</p>
+        <p>Best Time: ${bestSpeedrunTime ? formatTime(bestSpeedrunTime) : 'N/A'}</p>
     `;
     elements.bestResultsList.appendChild(speedrunDiv);
     
@@ -616,12 +1013,18 @@ function renderBestResults(stats) {
     blocksDiv.className = 'best-results-block';
     blocksDiv.innerHTML = '<h3>Best Block Times</h3>';
     
-    if (stats?.bestBlockTimes && Object.keys(stats.bestBlockTimes).length > 0) {
-        for (const [block, time] of Object.entries(stats.bestBlockTimes)) {
+    if (bestBlockTimes && Object.keys(bestBlockTimes).length > 0) {
+        const sortedBlocks = Object.entries(bestBlockTimes)
+            .filter(([block]) => block !== '2048') // Исключаем 2048, так как он уже в Speedrun Mode
+            .sort(([a], [b]) => parseInt(a) - parseInt(b));
+        
+        sortedBlocks.forEach(([block, timeData]) => {
             const div = document.createElement('div');
-            div.textContent = `${block}: ${formatTime(time)}`;
+            const time = timeData.time || timeData;
+            const formatted = timeData.formatted || formatTime(time);
+            div.textContent = `${block}: ${formatted}`;
             blocksDiv.appendChild(div);
-        }
+        });
     } else {
         blocksDiv.innerHTML += '<div>N/A</div>';
     }
@@ -629,38 +1032,150 @@ function renderBestResults(stats) {
     elements.bestResultsList.appendChild(blocksDiv);
 }
 
+// Обновленная функция loadUserStats
+async function loadUserStats() {
+    if (!state.currentUser) {
+        // Для гостей берем данные из localStorage
+        const localBest = localStorage.getItem('bestScore');
+        if (localBest) {
+            state.bestScore = parseInt(localBest);
+            elements.best.textContent = state.bestScore;
+        }
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/user/${state.currentUser.id}/stats`);
+        const data = await response.json();
+
+        if (data.success) {
+            // Обновляем только если серверное значение больше текущего
+            if (data.stats.bestScore > state.bestScore) {
+                state.bestScore = data.stats.bestScore;
+                elements.best.textContent = state.bestScore;
+            }
+            
+            // Обновляем bestBlockTimes
+            if (data.stats.bestBlockTimes) {
+                state.bestBlockTimes = data.stats.bestBlockTimes;
+            }
+            
+            // Принудительно обновляем Best Results
+            renderBestResults();
+        }
+    } catch (error) {
+        console.error('Failed to load user stats:', error);
+    }
+}
+
+
+// Обновленная функция loadUserStats
+async function loadUserStats() {
+    if (!state.currentUser) {
+        // Для гостей берем данные из localStorage
+        const localBest = localStorage.getItem('bestScore');
+        if (localBest) {
+            state.bestScore = parseInt(localBest);
+            elements.best.textContent = state.bestScore;
+        }
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/user/${state.currentUser.id}/stats`);
+        const data = await response.json();
+
+        if (data.success) {
+            // Обновляем только если серверное значение больше текущего
+            if (data.stats.bestScore > state.bestScore) {
+                state.bestScore = data.stats.bestScore;
+                elements.best.textContent = state.bestScore;
+            }
+            
+            // Обновляем bestBlockTimes
+            if (data.stats.bestBlockTimes) {
+                state.bestBlockTimes = data.stats.bestBlockTimes;
+            }
+            
+            // Принудительно обновляем Best Results
+            renderBestResults();
+        }
+    } catch (error) {
+        console.error('Failed to load user stats:', error);
+    }
+}
 // Показать рейтинг
 function showRating() {
+    // Сброс состояния перед открытием
     state.currentRatingPage = 1;
     state.currentRatingMode = 'classic';
+    
+    // Сброс активной вкладки
+    document.querySelectorAll('.rating-tab').forEach(t => t.classList.remove('active'));
+    document.querySelector('.rating-tab[data-mode="classic"]').classList.add('active');
+    
     elements.ratingModal.classList.remove('hidden');
     loadRatingData();
 }
 
 // Загрузка данных рейтинга
 async function loadRatingData() {
-    elements.ratingContent.innerHTML = '<div class="loading">Loading...</div>';
+    // Показываем индикатор загрузки сразу
+    elements.ratingContent.innerHTML = `
+        <div class="loading-spinner">
+            Loading...
+        </div>
+    `;
+    
+    // Создаем Promise с задержкой 2 секунды
+    const delay = new Promise(resolve => setTimeout(resolve, 500));
     
     try {
-        const response = await fetch(
-            `${API_BASE_URL}/leaderboard/${state.currentRatingMode}?page=${state.currentRatingPage}&limit=${state.ratingPerPage}`
-        );
+        // Запускаем загрузку данных и задержку параллельно
+        const [_, response] = await Promise.all([
+            delay,
+            fetch(`${API_BASE_URL}/leaderboard/${state.currentRatingMode}?page=${state.currentRatingPage}&limit=${state.ratingPerPage}`)
+        ]);
+        
         const data = await response.json();
         
         if (data.success) {
+            if (data.data.length === 0 && state.currentRatingPage > 1) {
+                state.currentRatingPage--;
+                await loadRatingData();
+                return;
+            }
+            
             renderRatingData(data);
+            updatePaginationButtons(data.meta);
         } else {
             elements.ratingContent.innerHTML = '<div class="error">Failed to load data</div>';
         }
     } catch (error) {
-        elements.ratingContent.innerHTML = '<div class="error">Network error</div>';
+        elements.ratingContent.innerHTML = `
+            <div class="error">
+                Network error. Please try again.
+            </div>
+        `;
+        console.error('Error loading rating data:', error);
     }
+}
+
+function updatePaginationButtons(meta) {
+    const prevBtn = document.getElementById('prev-page');
+    const nextBtn = document.getElementById('next-page');
+    const pageInfo = document.getElementById('page-info');
+    
+    // Обновляем информацию о странице
+    pageInfo.textContent = `Page ${state.currentRatingPage} of ${Math.ceil(meta.total / state.ratingPerPage)}`;
+    
+    // Обновляем состояние кнопок
+    prevBtn.disabled = state.currentRatingPage <= 1;
+    nextBtn.disabled = state.currentRatingPage >= Math.ceil(meta.total / state.ratingPerPage);
 }
 
 // Отрисовка данных рейтинга
 function renderRatingData(data) {
-    document.getElementById('page-info').textContent = `Page ${state.currentRatingPage} of ${Math.ceil(data.meta.total / state.ratingPerPage)}`;
-    
     let html = '<table class="rating-table"><thead><tr>';
     
     // Заголовки таблицы
@@ -676,14 +1191,20 @@ function renderRatingData(data) {
     
     // Данные таблицы
     data.data.forEach((item, index) => {
+        const globalIndex = (state.currentRatingPage - 1) * state.ratingPerPage + index + 1;
         const isCurrentUser = state.currentUser && item.user_id === state.currentUser.id;
         let rowClass = '';
         
-        if (isCurrentUser) rowClass = 'current-user';
-        else if (index < 3) rowClass = `medal-${index + 1}`;
+        // Медали только для топ-3 на первой странице
+        if (state.currentRatingPage === 1 && index < 3) {
+            rowClass = `medal-${index + 1}`;
+        }
+        if (isCurrentUser) {
+            rowClass = 'current-user';
+        }
         
         html += `<tr class="${rowClass}">`;
-        html += `<td>${(state.currentRatingPage - 1) * state.ratingPerPage + index + 1}</td>`;
+        html += `<td>${globalIndex}</td>`;
         html += `<td>${item.username}</td>`;
         
         if (state.currentRatingMode === 'classic') {
@@ -710,5 +1231,122 @@ function showError(elementId, message) {
     }
 }
 
+// Функция для Пароля
+function togglePassword(inputId, toggleIcon) {
+    const passwordInput = document.getElementById(inputId);
+
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        toggleIcon.textContent = '🙈'; // Изменяем иконку на закрытый глаз
+    } else {
+        passwordInput.type = 'password';
+        toggleIcon.textContent = '👁️'; // Возвращаем иконку на открытый глаз
+    }
+}
+
+function showGameOverModal(isWin, score) {
+    // Создаем модальное окно
+    const modal = document.createElement('div');
+    modal.className = 'game-over-modal';
+    
+    modal.innerHTML = `
+        <div class="modal-content">
+            <h2>${isWin ? 'You Won!' : 'Game Over!'}</h2>
+            <p>Your score: ${score}</p>
+            <p>Best score: ${state.bestScore}</p>
+            <div class="modal-buttons">
+                <button id="restart-game">Restart</button>
+                <button id="return-to-menu">Menu</button>
+                ${state.currentUser ? '<button id="view-best-results">Best Results</button>' : ''}
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Обработчики для кнопок
+    document.getElementById('restart-game').addEventListener('click', () => {
+        modal.remove();
+        resetGame();
+    });
+    
+    document.getElementById('return-to-menu').addEventListener('click', () => {
+        modal.remove();
+        returnToMenu();
+    });
+    
+    if (state.currentUser) {
+        document.getElementById('view-best-results').addEventListener('click', () => {
+            modal.remove();
+            showBestResults();
+        });
+    }
+}
+
+// Функция для отображения результатов Speedrun
+function showSpeedrunResultModal(isWin, time) {
+    const modal = document.createElement('div');
+    modal.className = 'game-over-modal';
+    
+    modal.innerHTML = `
+        <div class="modal-content">
+            <h2>${isWin ? 'You Won!' : 'Time Over!'}</h2>
+            <p>Your time: ${time}</p>
+            ${state.currentUser ? `<p>Best time: ${state.bestBlockTimes['2048']?.formatted || 'N/A'}</p>` : ''}
+            <div class="block-times-summary">
+                ${generateBlockTimesHTML()}
+            </div>
+            <div class="modal-buttons">
+                <button id="restart-game">Restart</button>
+                <button id="return-to-menu">Menu</button>
+                ${state.currentUser ? '<button id="view-best-results">Best Results</button>' : ''}
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Обработчики событий для кнопок
+    document.getElementById('restart-game').addEventListener('click', () => {
+        modal.remove();
+        resetGame();
+    });
+    
+    document.getElementById('return-to-menu').addEventListener('click', () => {
+        modal.remove();
+        returnToMenu();
+    });
+    
+    if (state.currentUser) {
+        document.getElementById('view-best-results').addEventListener('click', () => {
+            modal.remove();
+            showBestResults();
+        });
+    }
+}
+
+// Вспомогательная функция для генерации HTML с временем блоков
+function generateBlockTimesHTML() {
+    if (!state.blockTimes || Object.keys(state.blockTimes).length === 0) {
+        return '<p>No blocks reached</p>';
+    }
+
+    let html = '<h3>Block Times:</h3><ul class="block-times-list">';
+    const sortedBlocks = Object.entries(state.blockTimes)
+        .sort(([a], [b]) => parseInt(a) - parseInt(b));
+
+    sortedBlocks.forEach(([block, time]) => {
+        html += `<li>${block}: ${formatTime(time)}</li>`;
+    });
+
+    html += '</ul>';
+    return html;
+}
+
 // Инициализация игры при загрузке страницы
-document.addEventListener('DOMContentLoaded', initGame);
+document.addEventListener('DOMContentLoaded', () => {
+    initGame();
+    if (soundState.isMusicEnabled) {
+        playMenuMusic(); // Запуск музыки главного меню при загрузке
+    }
+});

@@ -147,6 +147,7 @@ app.post('/api/register', async (req, res) => {
 });
 
 // User login
+// User login
 app.post('/api/login', async (req, res) => {
     try {
         const { username, password } = req.body;
@@ -182,13 +183,28 @@ app.post('/api/login', async (req, res) => {
             });
         }
 
+        // Форматируем блоки для ответа
+        let bestBlockTimes = null;
+        if (user.best_block_times) {
+            const rawBlockTimes = JSON.parse(user.best_block_times);
+            bestBlockTimes = {};
+            
+            for (const [block, time] of Object.entries(rawBlockTimes)) {
+                bestBlockTimes[block] = {
+                    time: time,
+                    formatted: formatTime(time)
+                };
+            }
+        }
+
         // Return user data (without password)
         const userData = {
             id: user.id,
             username: user.username,
             email: user.email,
             bestScore: user.best_score,
-            bestSpeedrunTime: user.best_speedrun_time
+            bestSpeedrunTime: user.best_speedrun_time,
+            bestBlockTimes: bestBlockTimes
         };
 
         res.status(200).json({
@@ -207,59 +223,58 @@ app.post('/api/login', async (req, res) => {
 });
 
 // Save game score
+// В эндпоинте /api/save-score добавьте валидацию:
 app.post('/api/save-score', async (req, res) => {
     try {
         const { userId, score } = req.body;
-
-        if (!userId || !score) {
-            return res.status(400).json({
-                success: false,
-                message: 'User ID and score are required'
+        
+        // Валидация входных данных
+        if (!userId || !Number.isInteger(score)) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Invalid request data' 
             });
         }
 
-        // Get current best score
         const [user] = await pool.query(
             'SELECT best_score FROM users WHERE id = ?',
             [userId]
         );
-
+        
         if (user.length === 0) {
             return res.status(404).json({
                 success: false,
                 message: 'User not found'
             });
         }
-
+        
         const currentBest = user[0].best_score || 0;
-
-        // Update if new score is higher
+        
         if (score > currentBest) {
             await pool.query(
                 'UPDATE users SET best_score = ? WHERE id = ?',
                 [score, userId]
             );
-
-            return res.status(200).json({
-                success: true,
+            console.log(`Updated best score for user ${userId} to ${score}`);
+        console.log(`Current best score: ${currentBest}`);
+            return res.json({ 
+                success: true, 
                 message: 'New high score saved',
-                newBest: score,
-                previousBest: currentBest
+                newScore: score 
             });
         }
-
-        res.status(200).json({
-            success: true,
+        
+        return res.json({ 
+            success: true, 
             message: 'Score not higher than current best',
-            currentBest,
-            submittedScore: score
+            currentBest 
         });
-
     } catch (err) {
         console.error('Save score error:', err);
-        res.status(500).json({
+        console.log('Request body:', req.body);
+        return res.status(500).json({ 
             success: false,
-            message: 'Internal server error'
+            message: 'Database error' 
         });
     }
 });
@@ -350,21 +365,93 @@ app.get('/api/leaderboard/speedrun', async (req, res) => {
     }
 });
 
-// Save speedrun result
-app.post('/api/save-speedrun', async (req, res) => {
+// Save block appearance times
+app.post('/api/save-block-times', async (req, res) => {
     try {
-        const { userId, time, blockTimes } = req.body;
+        const { userId, blockTimes } = req.body;
 
-        if (!userId || !time || !blockTimes) {
+        if (!userId || !blockTimes) {
             return res.status(400).json({
                 success: false,
-                message: 'User ID, time and block times are required'
+                message: 'User ID and block times are required'
             });
         }
 
-        // Get current best time
+        // Проверяем, что blockTimes - объект
+        if (typeof blockTimes !== 'object' || blockTimes === null) {
+            return res.status(400).json({
+                success: false,
+                message: 'Block times must be an object'
+            });
+        }
+
         const [user] = await pool.query(
-            'SELECT best_speedrun_time, best_block_times FROM users WHERE id = ?',
+            'SELECT best_block_times FROM users WHERE id = ?',
+            [userId]
+        );
+
+        if (user.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        const currentBlockTimes = user[0].best_block_times 
+            ? JSON.parse(user[0].best_block_times)
+            : {};
+
+        const mergedBlockTimes = { ...currentBlockTimes };
+        let updated = false;
+
+        // Обновляем время для каждого блока, если оно лучше
+        for (const [block, blockTime] of Object.entries(blockTimes)) {
+            // Проверяем, что blockTime - число
+            if (typeof blockTime !== 'number') continue;
+            
+            if (!currentBlockTimes[block] || blockTime < currentBlockTimes[block]) {
+                mergedBlockTimes[block] = blockTime;
+                updated = true;
+            }
+        }
+
+        if (updated) {
+            await pool.query(
+                'UPDATE users SET best_block_times = ? WHERE id = ?',
+                [JSON.stringify(mergedBlockTimes), userId]
+            );
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Block times processed',
+            updated,
+            bestBlockTimes: mergedBlockTimes
+        });
+
+    } catch (err) {
+        console.error('Save block times error:', err);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
+    }
+});
+
+// Save speedrun time (only for wins)
+app.post('/api/save-speedrun-time', async (req, res) => {
+    try {
+        const { userId, time } = req.body;
+
+        if (!userId || !time) {
+            return res.status(400).json({
+                success: false,
+                message: 'User ID and time are required'
+            });
+        }
+
+        const [user] = await pool.query(
+            'SELECT best_speedrun_time FROM users WHERE id = ?',
             [userId]
         );
 
@@ -376,15 +463,8 @@ app.post('/api/save-speedrun', async (req, res) => {
         }
 
         const currentBestTime = user[0].best_speedrun_time;
-        const currentBlockTimes = user[0].best_block_times 
-            ? JSON.parse(user[0].best_block_times)
-            : {};
-
-        // Merge block times
-        const mergedBlockTimes = { ...currentBlockTimes };
         let updated = false;
 
-        // Check if new time is better
         if (currentBestTime === null || time < currentBestTime) {
             await pool.query(
                 'UPDATE users SET best_speedrun_time = ? WHERE id = ?',
@@ -393,31 +473,14 @@ app.post('/api/save-speedrun', async (req, res) => {
             updated = true;
         }
 
-        // Check each block time
-        for (const [block, blockTime] of Object.entries(blockTimes)) {
-            if (!currentBlockTimes[block] || blockTime < currentBlockTimes[block]) {
-                mergedBlockTimes[block] = blockTime;
-                updated = true;
-            }
-        }
-
-        // Update block times if needed
-        if (updated) {
-            await pool.query(
-                'UPDATE users SET best_block_times = ? WHERE id = ?',
-                [JSON.stringify(mergedBlockTimes), userId]
-            );
-        }
-
         res.status(200).json({
             success: true,
-            message: 'Speedrun results processed',
-            newBestTime: currentBestTime === null || time < currentBestTime,
-            updatedBlockTimes: updated
+            message: 'Speedrun time processed',
+            newBest: updated
         });
 
     } catch (err) {
-        console.error('Save speedrun error:', err);
+        console.error('Save speedrun time error:', err);
         res.status(500).json({
             success: false,
             message: 'Internal server error'
@@ -425,6 +488,7 @@ app.post('/api/save-speedrun', async (req, res) => {
     }
 });
 
+// Get user stats
 // Get user stats
 app.get('/api/user/:id/stats', async (req, res) => {
     try {
@@ -447,12 +511,25 @@ app.get('/api/user/:id/stats', async (req, res) => {
             });
         }
 
+        // Преобразуем JSON в объект и форматируем блоки
+        let bestBlockTimes = null;
+        if (user[0].best_block_times) {
+            const rawBlockTimes = JSON.parse(user[0].best_block_times);
+            bestBlockTimes = {};
+            
+            // Преобразуем ключи в удобный формат и значения в миллисекунды
+            for (const [block, time] of Object.entries(rawBlockTimes)) {
+                bestBlockTimes[block] = {
+                    time: time, // время в миллисекундах
+                    formatted: formatTime(time) // отформатированное время
+                };
+            }
+        }
+
         const stats = {
             bestScore: user[0].best_score,
             bestSpeedrunTime: user[0].best_speedrun_time,
-            bestBlockTimes: user[0].best_block_times 
-                ? JSON.parse(user[0].best_block_times)
-                : null
+            bestBlockTimes: bestBlockTimes
         };
 
         res.status(200).json({
@@ -468,6 +545,15 @@ app.get('/api/user/:id/stats', async (req, res) => {
         });
     }
 });
+
+// Функция для форматирования времени (миллисекунды в "мм:сс.мс")
+function formatTime(ms) {
+    const minutes = Math.floor(ms / 60000);
+    const seconds = Math.floor((ms % 60000) / 1000);
+    const milliseconds = ms % 1000;
+    
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`;
+}
 
 // 404 handler
 app.use((req, res) => {

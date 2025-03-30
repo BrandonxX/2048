@@ -1,5 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
+<audio id="click-sound" src="sounds/button-click.mp3" preload="auto"></audio>
+<audio id="move-sound" src="sounds/tile-move.mp3" preload="auto"></audio>
+<audio id="menu-music" src="sounds/menu-music.mp3" loop preload="auto"></audio>
+<audio id="game-music" src="sounds/game-music.mp3" loop preload="auto"></audio>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -24,11 +28,9 @@
                     <div class="form-group">
                         <label for="password">Password</label>
                         <input type="password" id="password" name="password" required="required"/>
+                        <span class="toggle-password" onclick="togglePassword('password', this)">👁️</span>
                     </div>
                     <div class="form-group">
-                        <label class="form-remember">
-                            <input type="checkbox"/>Remember Me
-                        </label>
                         <a class="form-recovery" href="#">Forgot Password?</a>
                     </div>
                     <div class="form-group">
@@ -54,10 +56,12 @@
                     <div class="form-group">
                         <label for="register-password">Password</label>
                         <input type="password" id="register-password" name="password" required>
+                        <span class="toggle-password register-toggle" onclick="togglePassword('register-password', this)">👁️</span>
                     </div>
                     <div class="form-group">
                         <label for="register-cpassword">Confirm Password</label>
                         <input type="password" id="register-cpassword" name="cpassword" required>
+                        <span class="toggle-password register-c-toggle" onclick="togglePassword('register-cpassword', this)">👁️</span>
                     </div>
                     <div class="form-group">
                         <label for="register-email">Email Address</label>
@@ -74,6 +78,9 @@
         </div>
     </div>
 
+    <button id="toggle-sound">On Sound</button>
+    <button id="toggle-music">On Music</button>
+    
     <!-- Главное меню (изначально скрыто) -->
     <div id="main-menu" class="main-menu hidden">
         <h1>2048</h1>
