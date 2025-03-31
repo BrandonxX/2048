@@ -223,58 +223,59 @@ app.post('/api/login', async (req, res) => {
 });
 
 // Save game score
-// В эндпоинте /api/save-score добавьте валидацию:
 app.post('/api/save-score', async (req, res) => {
     try {
         const { userId, score } = req.body;
-        
-        // Валидация входных данных
-        if (!userId || !Number.isInteger(score)) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Invalid request data' 
+
+        if (!userId || !score) {
+            return res.status(400).json({
+                success: false,
+                message: 'User ID and score are required'
             });
         }
 
+        // Get current best score
         const [user] = await pool.query(
             'SELECT best_score FROM users WHERE id = ?',
             [userId]
         );
-        
+
         if (user.length === 0) {
             return res.status(404).json({
                 success: false,
                 message: 'User not found'
             });
         }
-        
+
         const currentBest = user[0].best_score || 0;
-        
+
+        // Update if new score is higher
         if (score > currentBest) {
             await pool.query(
                 'UPDATE users SET best_score = ? WHERE id = ?',
                 [score, userId]
             );
-            console.log(`Updated best score for user ${userId} to ${score}`);
-        console.log(`Current best score: ${currentBest}`);
-            return res.json({ 
-                success: true, 
+
+            return res.status(200).json({
+                success: true,
                 message: 'New high score saved',
-                newScore: score 
+                newBest: score,
+                previousBest: currentBest
             });
         }
-        
-        return res.json({ 
-            success: true, 
+
+        res.status(200).json({
+            success: true,
             message: 'Score not higher than current best',
-            currentBest 
+            currentBest,
+            submittedScore: score
         });
+
     } catch (err) {
         console.error('Save score error:', err);
-        console.log('Request body:', req.body);
-        return res.status(500).json({ 
+        res.status(500).json({
             success: false,
-            message: 'Database error' 
+            message: 'Internal server error'
         });
     }
 });
@@ -361,6 +362,64 @@ app.get('/api/leaderboard/speedrun', async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Failed to get speedrun leaderboard'
+        });
+    }
+});
+
+// Get leaderboard (block times)
+app.get('/api/leaderboard/blocks', async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const offset = (page - 1) * limit;
+        const blockValue = parseInt(req.query.block) || 8; // По умолчанию блок 8
+
+        // Получаем всех пользователей с best_block_times
+        const [users] = await pool.query(
+            'SELECT id, username, best_block_times FROM users WHERE best_block_times IS NOT NULL'
+        );
+
+        // Обрабатываем данные
+        let blockRecords = [];
+        
+        users.forEach(user => {
+            if (user.best_block_times) {
+                const blockTimes = JSON.parse(user.best_block_times);
+                if (blockTimes[blockValue]) {
+                    blockRecords.push({
+                        user_id: user.id,
+                        username: user.username,
+                        block_value: blockValue,
+                        block_time: blockTimes[blockValue]
+                    });
+                }
+            }
+        });
+
+        // Сортируем по времени (от меньшего к большему)
+        blockRecords.sort((a, b) => a.block_time - b.block_time);
+
+        // Пагинация
+        const total = blockRecords.length;
+        const paginatedRecords = blockRecords.slice(offset, offset + limit);
+
+        res.status(200).json({
+            success: true,
+            data: paginatedRecords,
+            meta: {
+                page,
+                limit,
+                total,
+                pages: Math.ceil(total / limit),
+                current_block: blockValue
+            }
+        });
+
+    } catch (err) {
+        console.error('Block times leaderboard error:', err);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get block times leaderboard'
         });
     }
 });

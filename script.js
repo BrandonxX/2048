@@ -393,13 +393,12 @@ function logout() {
 // Загрузка статистики пользователя
 async function loadUserStats() {
     if (!state.currentUser) return;
-    
+
     try {
         const response = await fetch(`${API_BASE_URL}/user/${state.currentUser.id}/stats`);
         const data = await response.json();
-        
+
         if (data.success) {
-            // Всегда обновляем значение с сервера
             state.bestScore = data.stats.bestScore || 0;
             elements.best.textContent = state.bestScore;
             
@@ -763,14 +762,15 @@ async function endGame(isWin) {
         // Показываем модальное окно с результатами Speedrun
         showSpeedrunResultModal(isWin, formattedTime);
     } else {
-        // Логика для Classic режима
+        // Логика для классического режима
         if (state.score > state.bestScore) {
             state.bestScore = state.score;
             elements.best.textContent = state.bestScore;
-        
+            
+            // Сохранение счета на сервере
             if (state.currentUser) {
                 try {
-                    const response = await fetch(`${API_BASE_URL}/save-score`, {
+                    await fetch(`${API_BASE_URL}/save-score`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
@@ -780,13 +780,8 @@ async function endGame(isWin) {
                             score: state.score
                         })
                     });
-                    
-                    const result = await response.json();
-                    if (result.success) {
-                        await loadUserStats(); // Принудительно обновляем статистику
-                    }
                 } catch (error) {
-                    console.error('Error saving score:', error);
+                    console.error('Failed to save score:', error);
                 }
             } else {
                 // Для гостей сохраняем в localStorage
@@ -814,12 +809,19 @@ async function saveBestScore() {
             },
             body: JSON.stringify({
                 userId: state.currentUser.id,
-                score: state.bestScore
+                score: state.bestScore // Используем актуальное значение из state
             })
         });
 
         const data = await response.json();
-        return data.success;
+        
+        if (data.success) {
+            console.log('Score saved successfully:', data);
+            return true;
+        } else {
+            console.error('Server returned error:', data.message);
+            return false;
+        }
     } catch (error) {
         console.error('Error saving best score:', error);
         return false;
@@ -1120,23 +1122,28 @@ function showRating() {
 
 // Загрузка данных рейтинга
 async function loadRatingData() {
-    // Показываем индикатор загрузки сразу
+    // Показываем индикатор загрузки
     elements.ratingContent.innerHTML = `
         <div class="loading-spinner">
-            Loading...
+            <div class="loading-text">Loading ${state.currentRatingMode} data...</div>
+            <div class="loading-progress">Please wait</div>
         </div>
     `;
     
-    // Создаем Promise с задержкой 2 секунды
-    const delay = new Promise(resolve => setTimeout(resolve, 500));
-    
     try {
-        // Запускаем загрузку данных и задержку параллельно
-        const [_, response] = await Promise.all([
-            delay,
-            fetch(`${API_BASE_URL}/leaderboard/${state.currentRatingMode}?page=${state.currentRatingPage}&limit=${state.ratingPerPage}`)
-        ]);
+        let endpoint = `${API_BASE_URL}/leaderboard/${state.currentRatingMode}`;
+        let queryParams = `page=${state.currentRatingPage}&limit=${state.ratingPerPage}`;
         
+        // Для Block Times добавляем параметр блока
+        if (state.currentRatingMode === 'blocks') {
+            // Сохраняем выбранный блок между запросами
+            const selectedBlock = state.currentBlock || 8;
+            endpoint += `?block=${selectedBlock}&${queryParams}`;
+        } else {
+            endpoint += `?${queryParams}`;
+        }
+        
+        const response = await fetch(endpoint);
         const data = await response.json();
         
         if (data.success) {
@@ -1148,6 +1155,12 @@ async function loadRatingData() {
             
             renderRatingData(data);
             updatePaginationButtons(data.meta);
+            
+            // Всегда показываем селектор для Block Times, даже если нет данных
+            if (state.currentRatingMode === 'blocks') {
+                const currentBlock = data.meta?.current_block || state.currentBlock || 8;
+                addBlockSelector(currentBlock);
+            }
         } else {
             elements.ratingContent.innerHTML = '<div class="error">Failed to load data</div>';
         }
@@ -1160,6 +1173,57 @@ async function loadRatingData() {
         console.error('Error loading rating data:', error);
     }
 }
+
+function addBlockSelector(currentBlock = 8) {
+    const blockValues = [8, 16, 32, 64, 128, 256, 512, 1024, 2048];
+    const selectorHtml = `
+        <div class="block-selector-container">
+            <div class="block-selector">
+                <label for="block-select">Show times for block:</label>
+                <select id="block-select" onchange="changeBlock(this.value)">
+                    ${blockValues.map(block => `
+                        <option value="${block}" ${block === currentBlock ? 'selected' : ''}>
+                            ${block}
+                        </option>
+                    `).join('')}
+                </select>
+            </div>
+        </div>
+    `;
+    
+    // Удаляем старый селектор, если есть
+    const oldSelector = elements.ratingContent.querySelector('.block-selector-container');
+    if (oldSelector) {
+        oldSelector.remove();
+    }
+    
+    // Вставляем селектор в начало контента
+    elements.ratingContent.insertAdjacentHTML('afterbegin', selectorHtml);
+}
+
+// Глобальная функция для изменения блока
+window.changeBlock = async function(blockValue) {
+    // Сохраняем выбранный блок в состоянии
+    state.currentBlock = parseInt(blockValue);
+    state.currentRatingPage = 1;
+    
+    const endpoint = `${API_BASE_URL}/leaderboard/blocks?block=${blockValue}&page=1&limit=${state.ratingPerPage}`;
+    
+    try {
+        const response = await fetch(endpoint);
+        const data = await response.json();
+        
+        if (data.success) {
+            renderRatingData(data);
+            updatePaginationButtons(data.meta);
+            
+            // Обновляем селектор с сохранением выбранного блока
+            addBlockSelector(state.currentBlock);
+        }
+    } catch (error) {
+        console.error('Error changing block:', error);
+    }
+};
 
 function updatePaginationButtons(meta) {
     const prevBtn = document.getElementById('prev-page');
@@ -1176,49 +1240,127 @@ function updatePaginationButtons(meta) {
 
 // Отрисовка данных рейтинга
 function renderRatingData(data) {
-    let html = '<table class="rating-table"><thead><tr>';
+    let html = '';
     
-    // Заголовки таблицы
-    if (state.currentRatingMode === 'classic') {
-        html += '<th>Rank</th><th>Player</th><th>Score</th>';
-    } else if (state.currentRatingMode === 'speedrun') {
-        html += '<th>Rank</th><th>Player</th><th>Time</th>';
+    if (state.currentRatingMode === 'blocks') {
+        // Специальный рендеринг для Block Times
+        html = `
+            <div class="blocks-table-container">
+                <table class="blocks-table">
+                    <thead>
+                        <tr>
+                            <th width="15%">Rank</th>
+                            <th width="35%">Player</th>
+                            <th width="20%">Block</th>
+                            <th width="30%">Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        if (data.data.length === 0) {
+            html += `
+                <tr>
+                    <td colspan="4" class="no-data">No block times recorded yet</td>
+                </tr>
+            `;
+        } else {
+            data.data.forEach((item, index) => {
+                const globalIndex = (state.currentRatingPage - 1) * state.ratingPerPage + index + 1;
+                const isCurrentUser = state.currentUser && item.user_id === state.currentUser.id;
+                let rowClass = isCurrentUser ? 'current-user' : '';
+                rowClass += ` block-${item.block_value}`;
+                
+                html += `
+                    <tr class="${rowClass.trim()}">
+                        <td>${globalIndex}</td>
+                        <td class="player-name" title="${item.username}">
+                            ${item.username}
+                            ${isCurrentUser ? ' (You)' : ''}
+                        </td>
+                        <td class="block-value">${item.block_value}</td>
+                        <td class="block-time" title="${item.block_time} ms">
+                            ${formatTime(item.block_time)}
+                            ${state.currentRatingPage === 1 && index < 3 ? 
+                                `<span class="medal-icon">${['🥇','🥈','🥉'][index]}</span>` : ''}
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+        
+        html += `
+                    </tbody>
+                </table>
+                <div class="table-footer">
+                    Showing ${data.data.length} of ${data.meta.total} records
+                </div>
+            </div>
+        `;
     } else {
-        html += '<th>Rank</th><th>Player</th><th>Block</th><th>Time</th>';
+        // Рендеринг для Classic и Speedrun режимов
+        html = `
+            <div class="rating-table-container">
+                <table class="rating-table">
+                    <thead>
+                        <tr>
+                            <th width="15%">Rank</th>
+                            <th width="35%">Player</th>
+                            <th width="${state.currentRatingMode === 'classic' ? '50%' : '50%'}">
+                                ${state.currentRatingMode === 'classic' ? 'Score' : 'Time'}
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        if (data.data.length === 0) {
+            html += `
+                <tr>
+                    <td colspan="3" class="no-data">No records found</td>
+                </tr>
+            `;
+        } else {
+            data.data.forEach((item, index) => {
+                const globalIndex = (state.currentRatingPage - 1) * state.ratingPerPage + index + 1;
+                const isCurrentUser = state.currentUser && item.user_id === state.currentUser.id;
+                let rowClass = '';
+                
+                // Медали только для топ-3 на первой странице
+                if (state.currentRatingPage === 1 && index < 3) {
+                    rowClass = `medal-${index + 1}`;
+                }
+                if (isCurrentUser) {
+                    rowClass = 'current-user';
+                }
+                
+                html += `<tr class="${rowClass}">`;
+                html += `<td>${globalIndex}</td>`;
+                html += `<td class="player-name" title="${item.username}">
+                    ${item.username}
+                    ${isCurrentUser ? ' (You)' : ''}
+                </td>`;
+                
+                if (state.currentRatingMode === 'classic') {
+                    html += `<td class="score-value">${item.score.toLocaleString()}</td>`;
+                } else {
+                    html += `<td class="time-value">${formatTime(item.time)}</td>`;
+                }
+                
+                html += '</tr>';
+            });
+        }
+        
+        html += `
+                    </tbody>
+                </table>
+                <div class="table-footer">
+                    Showing ${data.data.length} of ${data.meta.total} records
+                </div>
+            </div>
+        `;
     }
     
-    html += '</tr></thead><tbody>';
-    
-    // Данные таблицы
-    data.data.forEach((item, index) => {
-        const globalIndex = (state.currentRatingPage - 1) * state.ratingPerPage + index + 1;
-        const isCurrentUser = state.currentUser && item.user_id === state.currentUser.id;
-        let rowClass = '';
-        
-        // Медали только для топ-3 на первой странице
-        if (state.currentRatingPage === 1 && index < 3) {
-            rowClass = `medal-${index + 1}`;
-        }
-        if (isCurrentUser) {
-            rowClass = 'current-user';
-        }
-        
-        html += `<tr class="${rowClass}">`;
-        html += `<td>${globalIndex}</td>`;
-        html += `<td>${item.username}</td>`;
-        
-        if (state.currentRatingMode === 'classic') {
-            html += `<td>${item.score}</td>`;
-        } else if (state.currentRatingMode === 'speedrun') {
-            html += `<td>${formatTime(item.time)}</td>`;
-        } else {
-            html += `<td>${item.block_value}</td><td>${formatTime(item.block_time)}</td>`;
-        }
-        
-        html += '</tr>';
-    });
-    
-    html += '</tbody></table>';
     elements.ratingContent.innerHTML = html;
 }
 

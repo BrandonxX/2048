@@ -879,3 +879,107 @@ button:hover {
     background-color: #9f8b77;
     transform: translateY(-2px);
 }
+
+/* Специфичные стили для вкладки Block Times */
+.blocks-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+}
+
+.blocks-table th, 
+.blocks-table td {
+    padding: 12px 8px;
+    border-bottom: 1px solid #eee4da;
+    text-align: center;
+}
+
+.blocks-table th {
+    background-color: #bbada0;
+    color: white;
+    font-weight: bold;
+    position: sticky;
+    top: 0;
+}
+
+.blocks-table tr:nth-child(even) {
+    background-color: #faf8ef;
+}
+
+.blocks-table tr:hover {
+    background-color: #eee4da;
+}
+
+.blocks-table .block-value {
+    font-weight: bold;
+    color: #776e65;
+}
+
+.blocks-table .block-time {
+    font-family: monospace;
+    color: black;
+}
+
+.blocks-table .player-name {
+    text-align: left;
+    padding-left: 15px;
+}
+
+/* Цвета для разных блоков */
+.blocks-table .block-8 { background-color: #f2b17920; }
+.blocks-table .block-16 { background-color: #f5956320; }
+.blocks-table .block-32 { background-color: #f67c5f20; }
+.blocks-table .block-64 { background-color: #f65e3b20; }
+.blocks-table .block-128 { background-color: #edcf7220; }
+.blocks-table .block-256 { background-color: #edcc6120; }
+.blocks-table .block-512 { background-color: #edc85020; }
+.blocks-table .block-1024 { background-color: #edc53f20; }
+.blocks-table .block-2048 { background-color: #edc22e20; }
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 600px) {
+    .blocks-table th, 
+    .blocks-table td {
+        padding: 8px 4px;
+        font-size: 14px;
+    }
+    
+    .blocks-table .player-name {
+        max-width: 100px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}
+
+.block-selector {
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.block-selector label {
+    font-weight: bold;
+    color: #776e65;
+}
+
+.block-selector select {
+    padding: 8px 12px;
+    border-radius: 4px;
+    border: 1px solid #bbada0;
+    background-color: #faf8ef;
+    color: #776e65;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.block-selector select:hover {
+    border-color: #8f7a66;
+}
+
+.block-selector select:focus {
+    outline: none;
+    border-color: #f65e3b;
+    box-shadow: 0 0 0 2px rgba(246, 94, 59, 0.2);
+}
