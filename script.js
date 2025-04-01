@@ -763,29 +763,33 @@ async function endGame(isWin) {
         showSpeedrunResultModal(isWin, formattedTime);
     } else {
         // Логика для классического режима
-        if (state.score > state.bestScore) {
-            state.bestScore = state.score;
-            elements.best.textContent = state.bestScore;
-            
-            // Сохранение счета на сервере
-            if (state.currentUser) {
-                try {
-                    await fetch(`${API_BASE_URL}/save-score`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            userId: state.currentUser.id,
-                            score: state.score
-                        })
-                    });
-                } catch (error) {
-                    console.error('Failed to save score:', error);
+        if (state.currentUser) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/save-classic-score`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        userId: state.currentUser.id, 
+                        score: state.score 
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Обновляем локальное состояние
+                    state.bestScore = data.newBest;
+                    elements.best.textContent = state.bestScore;
                 }
-            } else {
-                // Для гостей сохраняем в localStorage
+            } catch (error) {
+                console.error('Error saving score:', error);
+            }
+        } else {
+            // Для гостей - просто обновляем локальное хранилище
+            if (state.score > state.bestScore) {
+                state.bestScore = state.score;
                 localStorage.setItem('bestScore', state.bestScore);
+                elements.best.textContent = state.bestScore;
             }
         }
 
@@ -795,37 +799,6 @@ async function endGame(isWin) {
 
     // Обновляем статистику пользователя
     await loadUserStats();
-}
-
-// Сохранение лучшего счета (Classic режим)
-async function saveBestScore() {
-    if (!state.currentUser) return false;
-
-    try {
-        const response = await fetch(`${API_BASE_URL}/save-score`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                userId: state.currentUser.id,
-                score: state.bestScore // Используем актуальное значение из state
-            })
-        });
-
-        const data = await response.json();
-        
-        if (data.success) {
-            console.log('Score saved successfully:', data);
-            return true;
-        } else {
-            console.error('Server returned error:', data.message);
-            return false;
-        }
-    } catch (error) {
-        console.error('Error saving best score:', error);
-        return false;
-    }
 }
 
 // Сохранение результатов Speedrun
@@ -1088,19 +1061,15 @@ async function loadUserStats() {
         const data = await response.json();
 
         if (data.success) {
-            // Обновляем только если серверное значение больше текущего
-            if (data.stats.bestScore > state.bestScore) {
+            // Обновляем bestScore независимо от текущего значения
+            if (data.stats.bestScore !== undefined) {
                 state.bestScore = data.stats.bestScore;
                 elements.best.textContent = state.bestScore;
             }
             
-            // Обновляем bestBlockTimes
             if (data.stats.bestBlockTimes) {
                 state.bestBlockTimes = data.stats.bestBlockTimes;
             }
-            
-            // Принудительно обновляем Best Results
-            renderBestResults();
         }
     } catch (error) {
         console.error('Failed to load user stats:', error);
@@ -1129,6 +1098,9 @@ async function loadRatingData() {
             <div class="loading-progress">Please wait</div>
         </div>
     `;
+
+    const loadingDelay = 500;
+    await new Promise(resolve => setTimeout(resolve, loadingDelay));
     
     try {
         let endpoint = `${API_BASE_URL}/leaderboard/${state.currentRatingMode}`;
@@ -1236,6 +1208,18 @@ function updatePaginationButtons(meta) {
     // Обновляем состояние кнопок
     prevBtn.disabled = state.currentRatingPage <= 1;
     nextBtn.disabled = state.currentRatingPage >= Math.ceil(meta.total / state.ratingPerPage);
+
+    if (prevBtn.disabled) {
+        prevBtn.classList.add('disabled');
+    } else {
+        prevBtn.classList.remove('disabled');
+    }
+    
+    if (nextBtn.disabled) {
+        nextBtn.classList.add('disabled');
+    } else {
+        nextBtn.classList.remove('disabled');
+    }
 }
 
 // Отрисовка данных рейтинга
@@ -1390,12 +1374,17 @@ function showGameOverModal(isWin, score) {
     // Создаем модальное окно
     const modal = document.createElement('div');
     modal.className = 'game-over-modal';
+
+    // Определяем текст для лучшего счета
+    const bestScoreText = state.currentUser 
+        ? `Best score: ${state.bestScore || 'N/A'}`
+        : `Local best: ${state.bestScore || 'N/A'}`;
     
     modal.innerHTML = `
         <div class="modal-content">
             <h2>${isWin ? 'You Won!' : 'Game Over!'}</h2>
             <p>Your score: ${score}</p>
-            <p>Best score: ${state.bestScore}</p>
+            <p>${bestScoreText}</p>
             <div class="modal-buttons">
                 <button id="restart-game">Restart</button>
                 <button id="return-to-menu">Menu</button>

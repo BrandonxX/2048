@@ -222,60 +222,45 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// Save game score
-app.post('/api/save-score', async (req, res) => {
+// Save classic game score
+// Save classic score (updated version)
+app.post('/api/save-classic-score', async (req, res) => {
     try {
         const { userId, score } = req.body;
 
-        if (!userId || !score) {
-            return res.status(400).json({
-                success: false,
-                message: 'User ID and score are required'
+        // Валидация
+        if (!userId || isNaN(score)) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Invalid user ID or score' 
             });
         }
 
-        // Get current best score
+        // Обновляем счет, если он больше текущего
+        const [result] = await pool.query(
+            `UPDATE users 
+             SET best_score = GREATEST(IFNULL(best_score, 0), ?)
+             WHERE id = ?`,
+            [score, userId]
+        );
+
+        // Получаем обновленный счет
         const [user] = await pool.query(
             'SELECT best_score FROM users WHERE id = ?',
             [userId]
         );
 
-        if (user.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'User not found'
-            });
-        }
-
-        const currentBest = user[0].best_score || 0;
-
-        // Update if new score is higher
-        if (score > currentBest) {
-            await pool.query(
-                'UPDATE users SET best_score = ? WHERE id = ?',
-                [score, userId]
-            );
-
-            return res.status(200).json({
-                success: true,
-                message: 'New high score saved',
-                newBest: score,
-                previousBest: currentBest
-            });
-        }
-
         res.status(200).json({
             success: true,
-            message: 'Score not higher than current best',
-            currentBest,
-            submittedScore: score
+            message: 'Score processed',
+            newBest: user[0].best_score
         });
 
-    } catch (err) {
-        console.error('Save score error:', err);
-        res.status(500).json({
+    } catch (error) {
+        console.error('Database error:', error);
+        return res.status(500).json({
             success: false,
-            message: 'Internal server error'
+            message: 'Database operation failed'
         });
     }
 });
@@ -289,7 +274,7 @@ app.get('/api/leaderboard/classic', async (req, res) => {
 
         // Get total count
         const [countResult] = await pool.query(
-            'SELECT COUNT(*) as total FROM users WHERE best_score IS NOT NULL'
+            'SELECT COUNT(*) as total FROM users WHERE best_score > 0'
         );
         const total = countResult[0].total;
 
@@ -297,7 +282,7 @@ app.get('/api/leaderboard/classic', async (req, res) => {
         const [leaderboard] = await pool.query(
             `SELECT id, username, best_score as score 
              FROM users 
-             WHERE best_score IS NOT NULL 
+             WHERE best_score > 0 
              ORDER BY best_score DESC 
              LIMIT ? OFFSET ?`,
             [limit, offset]
