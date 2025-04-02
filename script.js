@@ -108,8 +108,45 @@ function playMenuMusic() {
 // Состояние звука и музыки
 const soundState = {
     isSoundEnabled: true,
-    isMusicEnabled: true
+    isMusicEnabled: true,
+    musicVolume: 1,
+    soundVolume: 1
 };
+
+function setVolume(audioElement, volume) {
+    if (audioElement) {
+        audioElement.volume = volume;
+    }
+}
+
+function handleMusicVolumeChange(event) {
+    const newVolume = event.target.value;
+    soundState.musicVolume = event.target.value;
+    setVolume(document.getElementById('menu-music'), soundState.musicVolume);
+    setVolume(document.getElementById('game-music'), soundState.musicVolume);
+
+    //Синхронизация
+    const otherMusicVolumeSlider = document.getElementById('music-volume' + (event.target.id === 'music-volume' ? '2' : ''));
+    if (otherMusicVolumeSlider) {
+        otherMusicVolumeSlider.value = newVolume;
+    }
+}
+
+// Function to handle sound volume change
+function handleSoundVolumeChange(event) {
+    const newVolume = event.target.value;
+    soundState.soundVolume = event.target.value;
+    setVolume(document.getElementById('click-sound'), soundState.soundVolume);
+    setVolume(document.getElementById('move-sound'), soundState.soundVolume);
+    setVolume(document.getElementById('win-sound'), soundState.soundVolume);
+    setVolume(document.getElementById('lose-sound'), soundState.soundVolume);
+
+    //Синхронизация
+    const otherSoundVolumeSlider = document.getElementById('sound-volume' + (event.target.id === 'sound-volume' ? '2' : ''));
+    if (otherSoundVolumeSlider) {
+        otherSoundVolumeSlider.value = newVolume;
+    }
+}
 
 // Функция для переключения звука
 function toggleSound() {
@@ -139,7 +176,7 @@ function stopMenuMusic() {
     const menuMusic = document.getElementById('menu-music');
     if (menuMusic) {
         menuMusic.pause();
-        menuMusic.currentTime = 0;
+        menuMusic.currentTime = 0; //0 не играет, 1 играет
     }
 }
 
@@ -148,7 +185,7 @@ function playGameMusic() {
     if (soundState.isMusicEnabled) {
         const gameMusic = document.getElementById('game-music');
         if (gameMusic) {
-            gameMusic.currentTime = 0; // Сброс времени воспроизведения
+            gameMusic.currentTime = 0; // сбрасывает
             gameMusic.play();
         }
     }
@@ -267,7 +304,34 @@ function setupEventListeners() {
     // Кнопки управления звуком и музыкой
     document.getElementById('toggle-sound').addEventListener('click', toggleSound);
     document.getElementById('toggle-music').addEventListener('click', toggleMusic);
+    document.getElementById('music-volume').addEventListener('input', handleMusicVolumeChange);
+    document.getElementById('sound-volume').addEventListener('input', handleSoundVolumeChange);
+    document.getElementById('music-volume2').addEventListener('input', handleMusicVolumeChange);
+    document.getElementById('sound-volume2').addEventListener('input', handleSoundVolumeChange);
 }
+
+// Найдите элемент кнопки
+const toggleStyleButton = document.getElementById('toggle-style-button');
+
+// Функция для переключения стилей
+function toggleStyles() {
+    // Найдите текущий элемент <link>, который подключает CSS
+    const styleLink = document.getElementById('dynamic-style');
+
+    // Определите текущий файл стилей
+    const currentStyle = styleLink.getAttribute('href');
+
+    // Переключите на другой файл стилей
+    if (currentStyle.includes('style1.css')) {
+        styleLink.setAttribute('href', 'style2.css');
+    } else {
+        styleLink.setAttribute('href', 'style1.css');
+    }
+    playClickSound()
+}
+
+// Добавьте обработчик событий для кнопки
+toggleStyleButton.addEventListener('click', toggleStyles);
 
 // Проверка статуса авторизации
 function checkAuthStatus() {

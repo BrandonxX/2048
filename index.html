@@ -8,7 +8,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>2048 Game</title>
-    <link rel="stylesheet" href="styles.css">
+    <link id="dynamic-style" rel="stylesheet" href="style1.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
 </head>
 <body>
@@ -102,8 +102,16 @@
             <button id="play-button">Classic</button>
             <button id="speedrun-button">Speedrun</button>
             <button id="best-results-button">Best Results</button>
+            <button id="toggle-style-button">Сhange style</button>
             <button id="rating-button">Rating</button> <!-- Новая кнопка -->
             <button id="logout-button">Logout</button> <!-- Кнопка выхода -->
+            <div id="volume-controls">
+        <label for="music-volume">Music Volume</label>
+        <input type="range" id="music-volume" min="0" max="1" step="0.01" value="1">
+
+        <label for="sound-volume">Sound Volume</label>
+        <input type="range" id="sound-volume" min="0" max="1" step="0.01" value="1">
+    </div>
         </div>
     </div>
 
@@ -143,6 +151,13 @@
     <p class="instructions">
         Join the numbers and get to the <strong>2048 tile!</strong>
     </p>
+    <div id="volume-controls">
+        <label for="music-volume2">Music Volume</label>
+        <input type="range" id="music-volume2" min="0" max="1" step="0.01" value="1">
+
+        <label for="sound-volume">Sound Volume</label>
+        <input type="range" id="sound-volume2" min="0" max="1" step="0.01" value="1">
+    </div>
 </div>
 
     <!-- Окно лучших результатов (изначально скрыто) -->
