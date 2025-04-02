@@ -290,7 +290,7 @@ h1 {
     left: 100%;
     background: #9c8b77;
     width: 100%;
-    min-height: 100%;
+    min-height: 520px;
     padding: 60px calc(10% + 60px) 60px 60px;
     transition: 0.3s ease;
     cursor: pointer;
@@ -677,26 +677,120 @@ h1 {
 
 /* Пароль */
 
+.password-hint-trigger {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    vertical-align: middle;
+    margin-left: 5px;
+}
+
+.hint-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    background: white;
+    border: 1px solid #bbada0;
+    border-radius: 50%;
+    color: #776e65;
+    font-size: 12px;
+    font-weight: bold;
+    line-height: 1;
+    cursor: help;
+    transition: all 0.2s ease;
+}
+
+.password-hint-trigger:hover .hint-icon {
+    background: #f8f1e9;
+    border-color: #8f7a66;
+}
+
+.password-hint {
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 10px);
+    transform: translateX(-50%);
+    width: 200px;
+    max-height: 150px;
+    padding: 10px;
+    background: #faf8ef;
+    border: 1px solid #bbada0;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    font-size: 11px;
+    line-height: 1.5;
+    color: #776e65;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    overflow-y: auto; /* На случай длинного списка */
+    white-space: normal;
+}
+
+.password-hint-trigger:hover .password-hint {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(-5px);
+}
+
+.password-hint:after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 8px;
+    border-style: solid;
+    border-color: #faf8ef transparent transparent transparent;
+}
+
+.hint-header {
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: #8f7a66;
+    font-size: 13px;
+}
+
+.hint-list {
+    padding-left: 15px;
+    margin: 10px 0 0;
+}
+
+.hint-list li {
+    margin-bottom: 5px;
+}
+
+.error-message {
+    color: #f65e3b;
+    font-size: 16px;
+    margin-top: 5px;
+    display: none;
+}
+
 .password-container {
     position: relative;
     width: 200px;
 }
+
 .toggle-password {
     position: absolute;
-    right: 100px;
-    top: 52%;
-    transform: translateY(-30%);
+    right: 130px;
+    top: 51%;
     cursor: pointer;
 }
 
 .register-toggle { /* 45 40 */
-    top: 45%; 
-    transform: translateY(-40%);
+    position: absolute;
+    top: 260px;
 }
 
 .register-c-toggle {
-    top: 60%; 
-    transform: translateY(-40%);
+    position: absolute;
+    top: 345px;
 }
 
 button {

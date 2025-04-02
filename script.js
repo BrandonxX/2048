@@ -335,9 +335,11 @@ async function handleRegister(e) {
         return showError('register-error', 'Passwords do not match');
     }
 
-    if (formData.password.length < 8) {
-        return showError('register-error', 'Password must be at least 8 characters');
+    const passwordValidation = validatePassword(formData.password);
+    if (!passwordValidation.isValid) {
+        return showError('register-error', 'Password does not meet all requirements');
     }
+
 
     try {
         const response = await fetch(`${API_BASE_URL}/register`, {
@@ -1354,24 +1356,32 @@ function renderRatingData(data) {
 }
 
 // Показать ошибку
+
 function showError(elementId, message) {
     const element = document.getElementById(elementId);
     if (element) {
         element.textContent = message;
         element.style.display = 'block';
+        
+        // Автоматическое скрытие через 5 секунд
+        setTimeout(() => {
+            element.style.display = 'none';
+        }, 5000);
     }
 }
 
 // Функция для Пароля
-function togglePassword(inputId, toggleIcon) {
-    const passwordInput = document.getElementById(inputId);
 
-    if (passwordInput.type === 'password') {
-        passwordInput.type = 'text';
-        toggleIcon.textContent = '🙈'; // Изменяем иконку на закрытый глаз
+function togglePassword(inputId, icon) {
+    const input = document.getElementById(inputId);
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.textContent = '🙈';
+        icon.style.color = '#FFFFFF';
     } else {
-        passwordInput.type = 'password';
-        toggleIcon.textContent = '👁️'; // Возвращаем иконку на открытый глаз
+        input.type = 'password';
+        icon.textContent = '👁️';
+        icon.style.color = 'rgba(255, 255, 255, 0.7)';
     }
 }
 
@@ -1477,6 +1487,20 @@ function generateBlockTimesHTML() {
 
     html += '</ul>';
     return html;
+}
+
+function validatePassword(password) {
+    const validations = {
+        length: password.length >= 8,
+        upperCase: /[A-Z]/.test(password),
+        lowerCase: /[a-z]/.test(password),
+        specialChar: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+        noSequences: !/(abc|123)/i.test(password)
+    };
+
+    return {
+        isValid: Object.values(validations).every(v => v)
+    };
 }
 
 // Инициализация игры при загрузке страницы
