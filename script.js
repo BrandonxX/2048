@@ -282,6 +282,10 @@ async function handleLogin(e) {
     const username = elements.loginForm.querySelector('input[name="username"]').value.trim();
     const password = elements.loginForm.querySelector('input[name="password"]').value.trim();
 
+    if (username.length > 30){
+        return showError('register-error', "Username must be less than 30 characters.");
+    }
+
     try {
         const response = await fetch(`${API_BASE_URL}/login`, {
             method: 'POST',
@@ -329,6 +333,10 @@ async function handleRegister(e) {
     // Валидация
     if (!formData.username || !formData.password || !formData.cpassword || !formData.email) {
         return showError('register-error', 'All fields are required');
+    }
+
+    if (formData.username.length > 30){
+        return showError('register-error', "Username must be less than 30 characters.");
     }
 
     if (formData.password !== formData.cpassword) {
