@@ -1495,11 +1495,16 @@ function validatePassword(password) {
         upperCase: /[A-Z]/.test(password),
         lowerCase: /[a-z]/.test(password),
         specialChar: /[!@#$%^&*(),.?":{}|<>]/.test(password),
-        noSequences: !/(abc|123)/i.test(password)
+        noSequences: !/(abc|123|qwerty|asdf|password)/i.test(password),
+        noRepeatingChars: !/(.)\1{2,}/.test(password), // Проверка на 3+ повторяющихся символов
+        noKeyboardSequences: !/(qwerty|asdfgh|zxcvbn|123456|987654)/i.test(password),
+        noConsecutiveChars: !/([a-zA-Z0-9])\1{2,}/.test(password), // Проверка на 3+ одинаковых подряд символов
+        noSimpleSequences: !/(0123|1234|2345|3456|4567|5678|6789|7890|abcd|bcde|cdef|defg|efgh|fghi|ghij|hijk|ijkl|jklm|klmn|lmno|mnop|nopq|opqr|pqrs|qrst|rstu|stuv|tuvw|uvwx|vwxy|wxyz)/i.test(password)
     };
 
     return {
-        isValid: Object.values(validations).every(v => v)
+        isValid: Object.values(validations).every(v => v),
+        details: validations // Можно вернуть детали проверок для отображения пользователю
     };
 }
 
