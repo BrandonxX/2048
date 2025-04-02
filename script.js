@@ -354,16 +354,21 @@ async function handleRegister(e) {
 
         const data = await response.json();
 
+        if (!response.ok) { // Проверяем статус ответа
+            throw new Error(data.message || 'Registration failed');
+        }
+
         if (data.success) {
             alert('Registration successful! Please login.');
-            document.querySelector('.form-panel.two').removeClass('active');
-            document.querySelector('.form-panel.one').removeClass('hidden');
+            document.querySelector('.form-panel.two').classList.remove('active');
+            document.querySelector('.form-panel.one').classList.remove('hidden');
             elements.registerForm.reset();
         } else {
             showError('register-error', data.message || 'Registration failed');
         }
     } catch (error) {
-        showError('register-error', 'Network error. Please try again.');
+        console.error('Registration error:', error);
+        showError('register-error', error.message || 'Network error. Please try again.');
     }
 }
 
