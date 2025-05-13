@@ -10,6 +10,10 @@ const rateLimit = require('express-rate-limit');
 const app = express();
 const port = process.env.PORT || 5000;
 
+const failedAttempts = new Map(); // { ip: { count: number, lastAttempt: number } }
+const BLOCK_TIME_MS = 30 * 1000; // 30 сек блокировки
+const MAX_ATTEMPTS = 3; // Максимальное количество попыток
+
 // Middleware
 app.use(helmet());
 app.use(bodyParser.json());
@@ -19,6 +23,21 @@ app.use(cors({
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true
 }));
+// Middleware для защиты от брутфорса
+app.use((req, res, next) => {
+    const ip = req.ip || req.socket.remoteAddress;
+    
+    // Очистка устаревших записей
+    const now = Date.now();
+    if (failedAttempts.has(ip)) {
+        const { lastAttempt } = failedAttempts.get(ip);
+        if (now - lastAttempt > BLOCK_TIME_MS) {
+            failedAttempts.delete(ip);
+        }
+    }
+    
+    next();
+});
 
 // Rate limiting
 const limiter = rateLimit({
@@ -31,7 +50,7 @@ app.use(limiter);
 const pool = mysql.createPool({
     host: process.env.DB_HOST || 'localhost',
     user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || 'root',
+    password: process.env.DB_PASSWORD || 'root1337',
     database: process.env.DB_NAME || 'mydatabase',
     waitForConnections: true,
     connectionLimit: 10,
@@ -147,10 +166,23 @@ app.post('/api/register', async (req, res) => {
 });
 
 // User login
-// User login
 app.post('/api/login', async (req, res) => {
     try {
+        const ip = req.ip || req.socket.remoteAddress;
         const { username, password } = req.body;
+
+        // Проверка блокировки
+        if (failedAttempts.has(ip)) {
+            const { count, lastAttempt } = failedAttempts.get(ip);
+            const timeLeft = BLOCK_TIME_MS - (Date.now() - lastAttempt);
+            
+            if (count >= MAX_ATTEMPTS && timeLeft > 0) {
+                return res.status(429).json({
+                    success: false,
+                    message: `Слишком много попыток. Попробуйте через ${Math.ceil(timeLeft/1000)} сек.`
+                });
+            }
+        }
 
         if (!username || !password) {
             return res.status(400).json({
@@ -160,28 +192,29 @@ app.post('/api/login', async (req, res) => {
         }
 
         // Find user
-        const [users] = await pool.query(
-            'SELECT * FROM users WHERE username = ?',
-            [username]
-        );
-
-        if (users.length === 0) {
+        const [users] = await pool.query('SELECT * FROM users WHERE username = ?', [username]);
+        
+        if (!users.length) {
+            updateFailedAttempts(ip);
             return res.status(401).json({
                 success: false,
-                message: 'Invalid credentials'
+                message: 'Неверные данные'
             });
         }
-
         const user = users[0];
 
         // Check password
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
+            updateFailedAttempts(ip);
             return res.status(401).json({
                 success: false,
                 message: 'Invalid credentials'
             });
         }
+
+         // Успешный вход - сбрасываем счетчик
+        failedAttempts.delete(ip);
 
         // Форматируем блоки для ответа
         let bestBlockTimes = null;
@@ -615,6 +648,15 @@ app.use((err, req, res, next) => {
         message: 'Internal server error'
     });
 });
+
+// Функция для обновления счетчика неудачных попыток
+function updateFailedAttempts(ip) {
+    const current = failedAttempts.get(ip) || { count: 0 };
+    failedAttempts.set(ip, {
+        count: current.count + 1,
+        lastAttempt: Date.now()
+    });
+}
 
 // Start server
 async function startServer() {
