@@ -36,6 +36,9 @@
                     <div class="form-group">
                         <button type="submit">Log In</button>
                     </div>
+                    <div class="form-group">
+                        <button id="open-2fa-setup-from-login" type="button" style="background-color:#8f7a66; color:white; border:none; border-radius:5px; padding:10px 20px; font-size:16px; cursor:pointer; width:100%;">Setup 2FA</button>
+                    </div>
                 </form>
                 <div class="form-group">
                     <button id="switch-to-register">Create Account</button>
@@ -195,7 +198,24 @@
         
         <button id="close-rating-modal" class="modal-close-btn">Close</button>
     </div>
-</div>
+
+    <!-- 2FA Setup Modal -->
+    <div id="two-factor-setup-modal" class="modal hidden">
+        <div class="modal-content" style="width: 350px; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.3);">
+            <h2>Two-Factor Authentication Setup</h2>
+            <p>Scan the QR code below with your authenticator app, then enter the 6-digit code to enable 2FA.</p>
+            <div id="two-factor-qr-code" style="margin: 10px 0; text-align: center;">
+                <img id="two-factor-qr-image" src="" alt="QR Code" style="max-width: 100%; height: auto;"/>
+            </div>
+            <input type="text" id="two-factor-setup-code-input" maxlength="6" pattern="\\d{6}" placeholder="123456" style="width: 100%; padding: 10px; font-size: 16px; box-sizing: border-box;"/>
+            <div id="two-factor-setup-error" class="error-message" style="display:none; margin-top: 10px; color: red;"></div>
+            <div class="modal-buttons" style="display: flex; justify-content: space-between; margin-top: 15px;">
+                <button id="two-factor-setup-verify-btn" style="padding: 10px 15px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">Verify & Enable 2FA</button>
+                <button id="two-factor-setup-cancel-btn" style="padding: 10px 15px; background-color: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
 <canvas id="rating-chart" width="400" height="200"></canvas>
     <script src="script.js"></script>
 </body>

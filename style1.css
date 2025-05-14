@@ -206,10 +206,16 @@ h1 {
     width: fit-content;
 }
 
+/*
 .hidden {
     display: none;
     opacity: 0;
     visibility: hidden;
+}
+    */
+    
+.hidden {
+    display: none !important;
 }
 
 /* Модальное окно */
@@ -1141,6 +1147,21 @@ button:hover {
 
 #volume-controls input[type="range"]:hover::-moz-range-thumb {
     background: #9c8b77;
+}
+
+#two-factor-setup-modal {
+    display: none;
+    justify-content: center;
+    align-items: center;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    z-index: 10000;
+}
+
+#two-factor-setup-modal:not(.hidden) {
+    display: flex;
 }
 
 .tile-color-2 { background-color: #eee4da; }

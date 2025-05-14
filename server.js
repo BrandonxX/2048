@@ -6,6 +6,8 @@ const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const speakeasy = require('speakeasy');
+const qrcode = require('qrcode');
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -23,6 +25,7 @@ app.use(cors({
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true
 }));
+
 // Middleware для защиты от брутфорса
 app.use((req, res, next) => {
     const ip = req.ip || req.socket.remoteAddress;
@@ -81,10 +84,18 @@ async function initializeDatabase() {
                 best_score INT DEFAULT NULL,
                 best_speedrun_time INT DEFAULT NULL,
                 best_block_times JSON DEFAULT NULL,
+                two_factor_secret VARCHAR(255) DEFAULT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             )
         `);
+
+        // Check if two_factor_secret column exists, add if not
+        const [columns] = await pool.query("SHOW COLUMNS FROM users LIKE 'two_factor_secret'");
+        if (columns.length === 0) {
+            await pool.query("ALTER TABLE users ADD COLUMN two_factor_secret VARCHAR(255) DEFAULT NULL");
+        }
+
         console.log('Database tables initialized');
     } catch (err) {
         console.error('Database initialization failed:', err);
@@ -165,7 +176,6 @@ app.post('/api/register', async (req, res) => {
     }
 });
 
-// User login
 app.post('/api/login', async (req, res) => {
     try {
         const ip = req.ip || req.socket.remoteAddress;
@@ -210,6 +220,17 @@ app.post('/api/login', async (req, res) => {
             return res.status(401).json({
                 success: false,
                 message: 'Invalid credentials'
+            });
+        }
+
+        // Check if 2FA is enabled
+        if (user.two_factor_secret) {
+            // Respond with 2FA required
+            return res.status(200).json({
+                success: true,
+                twoFactorRequired: true,
+                userId: user.id,
+                message: 'Two-factor authentication required'
             });
         }
 
@@ -632,12 +653,149 @@ function formatTime(ms) {
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`;
 }
 
-// 404 handler
-app.use((req, res) => {
-    res.status(404).json({
-        success: false,
-        message: 'Endpoint not found'
-    });
+app.post('/api/2fa/setup', async (req, res) => {
+    try {
+        const { userId } = req.body;
+        if (!userId) {
+            return res.status(400).json({ success: false, message: 'User ID is required' });
+        }
+
+        // Generate TOTP secret
+        const secret = speakeasy.generateSecret({ length: 20 });
+
+        // Save secret temporarily in memory or DB for the user
+        await pool.query('UPDATE users SET two_factor_secret = ? WHERE id = ?', [secret.base32, userId]);
+
+        // Generate QR code data URL
+        const otpauthUrl = speakeasy.otpauthURL({
+            secret: secret.ascii,
+            label: `2048 (${userId})`,
+            issuer: '2048 Game'
+        });
+
+        const qrCodeDataUrl = await qrcode.toDataURL(otpauthUrl);
+
+        res.status(200).json({
+            success: true,
+            secret: secret.base32,
+            qrCodeDataUrl
+        });
+    } catch (err) {
+        console.error('2FA setup error:', err);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+app.get('/api/user/by-username', async (req, res) => {
+    try {
+        const username = req.query.username;
+        if (!username) {
+            return res.status(400).json({ success: false, message: 'Username is required' });
+        }
+
+        const [rows] = await pool.query('SELECT id FROM users WHERE username = ?', [username]);
+        if (rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        res.status(200).json({ success: true, userId: rows[0].id });
+    } catch (err) {
+        console.error('Error fetching user by username:', err);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+app.post('/api/2fa/verify', async (req, res) => {
+    try {
+        const { userId, token } = req.body;
+        if (!userId || !token) {
+            return res.status(400).json({ success: false, message: 'User ID and token are required' });
+        }
+
+        const [users] = await pool.query('SELECT two_factor_secret FROM users WHERE id = ?', [userId]);
+        if (!users.length || !users[0].two_factor_secret) {
+            return res.status(400).json({ success: false, message: '2FA not setup for user' });
+        }
+
+        const verified = speakeasy.totp.verify({
+            secret: users[0].two_factor_secret,
+            encoding: 'base32',
+            token,
+            window: 1
+        });
+
+        if (verified) {
+            res.status(200).json({ success: true, message: '2FA verified successfully' });
+        } else {
+            res.status(400).json({ success: false, message: 'Invalid 2FA token' });
+        }
+    } catch (err) {
+        console.error('2FA verify error:', err);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+app.post('/api/2fa/login', async (req, res) => {
+    try {
+        const { userId, token } = req.body;
+        if (!userId || !token) {
+            return res.status(400).json({ success: false, message: 'User ID and token are required' });
+        }
+
+        const [users] = await pool.query('SELECT * FROM users WHERE id = ?', [userId]);
+        if (!users.length || !users[0].two_factor_secret) {
+            return res.status(400).json({ success: false, message: '2FA not setup for user' });
+        }
+
+        const user = users[0];
+
+        const verified = speakeasy.totp.verify({
+            secret: user.two_factor_secret,
+            encoding: 'base32',
+            token,
+            window: 1
+        });
+
+        if (!verified) {
+            return res.status(401).json({ success: false, message: 'Invalid 2FA token' });
+        }
+
+        // Return user data (without password)
+        let bestBlockTimes = null;
+        if (user.best_block_times) {
+            const rawBlockTimes = JSON.parse(user.best_block_times);
+            bestBlockTimes = {};
+            
+            for (const [block, time] of Object.entries(rawBlockTimes)) {
+                bestBlockTimes[block] = {
+                    time: time,
+                    formatted: formatTime(time)
+                };
+            }
+        }
+
+        const userData = {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            bestScore: user.best_score,
+            bestSpeedrunTime: user.best_speedrun_time,
+            bestBlockTimes: bestBlockTimes
+        };
+
+        res.status(200).json({
+            success: true,
+            message: 'Login successful',
+            user: userData
+        });
+
+    } catch (err) {
+        console.error('2FA login error:', err);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
+    }
 });
 
 // Error handler

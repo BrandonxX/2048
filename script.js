@@ -1,3 +1,72 @@
+console.log('script.js loaded');
+
+window.addEventListener('DOMContentLoaded', () => {
+    // Add event listener for 2FA verify button
+    const verifyBtn = document.getElementById('two-factor-setup-verify-btn');
+    const cancelBtn = document.getElementById('two-factor-setup-cancel-btn');
+    if (verifyBtn) {
+        verifyBtn.addEventListener('click', () => {
+            const modal = document.getElementById('two-factor-setup-modal');
+            const codeInput = document.getElementById('two-factor-setup-code-input');
+            const errorDiv = document.getElementById('two-factor-setup-error');
+            const username = modal.dataset.username;
+            const code = codeInput.value.trim();
+        
+            errorDiv.style.display = 'none';
+            errorDiv.textContent = '';
+        
+            if (!code.match(/^\d{6}$/)) {
+                errorDiv.textContent = 'Please enter a valid 6-digit code.';
+                errorDiv.style.display = 'block';
+                return;
+            }
+        
+            // Fetch userId by username before verification
+            fetch(`${API_BASE_URL}/user/by-username?username=${encodeURIComponent(username)}`)
+            .then(res => res.json())
+            .then(data => {
+                if (!data.success) {
+                    throw new Error(data.message || 'User not found');
+                }
+                const userId = data.userId;
+                // Verify 2FA code
+                return fetch(`${API_BASE_URL}/2fa/verify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId, token: code })
+                });
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Two-factor authentication enabled successfully.');
+                    modal.classList.add('hidden');
+                    codeInput.value = '';
+                } else {
+                    errorDiv.textContent = data.message || 'Invalid code. Please try again.';
+                    errorDiv.style.display = 'block';
+                }
+            })
+            .catch(err => {
+                errorDiv.textContent = err.message || 'Error verifying code.';
+                errorDiv.style.display = 'block';
+            });
+        });
+    }
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', () => {
+            const modal = document.getElementById('two-factor-setup-modal');
+            const codeInput = document.getElementById('two-factor-setup-code-input');
+            const errorDiv = document.getElementById('two-factor-setup-error');
+            modal.classList.add('hidden');
+            codeInput.value = '';
+            errorDiv.style.display = 'none';
+            errorDiv.textContent = '';
+        });
+    }
+});
+
+
 // Конфигурация
 const API_BASE_URL = 'http://localhost:5000/api';
 const GRID_SIZE = 4;
@@ -61,6 +130,478 @@ function initGame() {
     setupEventListeners();
     checkAuthStatus();
     initializeGrid();
+}
+
+function openTwoFactorSetupModal() {
+    const modal = document.getElementById('two-factor-setup-modal');
+    const qrCodeContainer = document.getElementById('two-factor-qr-code');
+    const codeInput = document.getElementById('two-factor-setup-code-input');
+    const errorDiv = document.getElementById('two-factor-setup-error');
+
+    if (!modal) return;
+
+    if (!state.currentUser || !state.currentUser.id) {
+        alert('Please log in first to setup 2FA.');
+        return;
+    }
+
+    // Clear previous error and input
+    errorDiv.style.display = 'none';
+    errorDiv.textContent = '';
+    codeInput.value = '';
+    qrCodeContainer.innerHTML = '';
+
+    // Show modal
+    modal.classList.remove('hidden');
+
+    console.log('Fetching 2FA setup QR code for userId:', state.currentUser.id);
+
+    // Fetch QR code and secret from backend using userId
+    fetch(`${API_BASE_URL}/2fa/setup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: state.currentUser.id })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            console.log('Received QR code data:', data.qrCodeDataUrl);
+            qrCodeContainer.innerHTML = `<img src="${data.qrCodeDataUrl}" alt="QR Code" />`;
+            modal.dataset.secret = data.secret;
+        } else {
+            console.error('Failed to get 2FA setup data:', data.message);
+            errorDiv.textContent = data.message || 'Failed to get 2FA setup data';
+            errorDiv.style.display = 'block';
+        }
+    })
+    .catch((err) => {
+        console.error('Network error while fetching 2FA setup data:', err);
+        errorDiv.textContent = 'Network error while fetching 2FA setup data';
+        errorDiv.style.display = 'block';
+    });
+}
+
+// Verify 2FA setup code from modal
+document.getElementById('two-factor-setup-verify-btn').addEventListener('click', async () => {
+    const modal = document.getElementById('two-factor-setup-modal');
+    const codeInput = document.getElementById('two-factor-setup-code-input');
+    const errorDiv = document.getElementById('two-factor-setup-error');
+    const token = codeInput.value.trim();
+
+    if (!/^\d{6}$/.test(token)) {
+        errorDiv.textContent = 'Please enter a valid 6-digit code.';
+        errorDiv.style.display = 'block';
+        return;
+    }
+
+    try {
+        const userId = state.currentUser ? state.currentUser.id : null;
+        if (!userId) {
+            errorDiv.textContent = 'User not logged in.';
+            errorDiv.style.display = 'block';
+            return;
+        }
+
+        const response = await fetch(`${API_BASE_URL}/2fa/verify`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, token })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            alert('Two-Factor Authentication enabled successfully!');
+            modal.classList.add('hidden');
+        } else {
+            errorDiv.textContent = data.message || 'Invalid 2FA code.';
+            errorDiv.style.display = 'block';
+        }
+    } catch {
+        errorDiv.textContent = 'Network error. Please try again.';
+        errorDiv.style.display = 'block';
+    }
+});
+
+window.addEventListener('DOMContentLoaded', () => {
+    // Removed call to undefined function addManualTwoFactorTrigger
+
+    // Global click logger for debugging
+    document.addEventListener('click', (event) => {
+        console.log('Document click:', event.target);
+    });
+
+    // Delegated event listener for 2FA setup button click
+    document.addEventListener('click', (event) => {
+        const target = event.target;
+        if (target && target.id === 'open-2fa-setup-from-login') {
+            console.log('Setup 2FA button clicked (delegated)'); // Debug log to confirm click
+            const username = prompt('Enter your username to setup 2FA:');
+            if (!username) {
+                alert('Username is required to setup 2FA.');
+                return;
+            }
+            openTwoFactorSetupModalForUsername(username);
+        }
+    });
+});
+
+function addTwoFactorSetupButton() {
+    if (!state.currentUser) return;
+
+    let btn = document.getElementById('two-factor-setup-button');
+    if (!btn) {
+        btn = document.createElement('button');
+        btn.id = 'two-factor-setup-button';
+        btn.textContent = 'Setup 2FA';
+        btn.classList.add('menu-button'); // Add class for styling consistent with other buttons
+        btn.style.marginLeft = '10px';
+        btn.addEventListener('click', () => {
+            openTwoFactorSetupModal();
+        });
+        const menuButtons = document.getElementById('menu-buttons');
+        if (menuButtons) {
+            menuButtons.appendChild(btn);
+        } else {
+            elements.mainMenu.appendChild(btn);
+        }
+    }
+}
+
+function createTwoFactorSetupModal() {
+    if (document.getElementById('two-factor-setup-modal')) {
+        return; // Modal already exists
+    }
+
+    const modal = document.createElement('div');
+    modal.id = 'two-factor-setup-modal';
+    modal.className = 'modal hidden';
+    modal.style.cssText = `
+        width: 100%;
+        height: 100%;
+        display: none;
+        justify-content: center;
+        align-items: center;
+        position: fixed;
+        top: 0; left: 0;
+        background-color: rgba(0,0,0,0.5);
+        z-index: 99999;
+    `;
+
+    const modalContent = document.createElement('div');
+    modalContent.className = 'modal-content';
+    modalContent.style.cssText = `
+        width: 350px;
+        background: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    `;
+
+    modalContent.innerHTML = `
+        <h2>Two-Factor Authentication Setup</h2>
+        <p>Scan the QR code below with your authenticator app, then enter the 6-digit code to enable 2FA.</p>
+        <div id="two-factor-qr-code" style="margin: 10px 0; text-align: center;">
+            <img id="two-factor-qr-image" src="" alt="QR Code" style="max-width: 100%; height: auto;"/>
+        </div>
+        <input type="text" id="two-factor-setup-code-input" maxlength="6" pattern="\\d{6}" placeholder="123456" style="width: 100%; padding: 10px; font-size: 16px; box-sizing: border-box;"/>
+        <div id="two-factor-setup-error" class="error-message" style="display:none; margin-top: 10px; color: red;"></div>
+        <div class="modal-buttons" style="display: flex; justify-content: space-between; margin-top: 15px;">
+            <button id="two-factor-setup-verify-btn" style="padding: 10px 15px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">Verify</button>
+            <button id="two-factor-setup-cancel-btn" style="padding: 10px 15px; background-color: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+        </div>
+    `;
+
+    modal.appendChild(modalContent);
+    document.body.appendChild(modal);
+
+    // Add event listeners for verify and cancel buttons
+    document.getElementById('two-factor-setup-verify-btn').addEventListener('click', () => {
+        verifyTwoFactorCode();
+    });
+
+    document.getElementById('two-factor-setup-cancel-btn').addEventListener('click', () => {
+        closeTwoFactorSetupModal();
+    });
+}
+
+function openTwoFactorSetupModalForUsername(username) {
+    createTwoFactorSetupModal();
+
+    const modal = document.getElementById('two-factor-setup-modal');
+    const qrCodeContainer = document.getElementById('two-factor-qr-code');
+    const codeInput = document.getElementById('two-factor-setup-code-input');
+    const errorDiv = document.getElementById('two-factor-setup-error');
+
+    if (!modal) {
+        console.error('Modal element not found');
+        return;
+    }
+
+    // Clear previous error and input
+    errorDiv.style.display = 'none';
+    errorDiv.textContent = '';
+    codeInput.value = '';
+
+    // Show modal
+    modal.classList.remove('hidden');
+    // Removed inline style display to avoid conflict with CSS opacity/visibility
+    // modal.style.display = 'flex';
+    console.log('Modal shown');
+
+    // Fetch userId by username first
+    fetch(`${API_BASE_URL}/user/by-username?username=${encodeURIComponent(username)}`)
+.then(res => {
+    console.log('Fetch /user/by-username response status:', res.status);
+    return res.json();
+})
+.then(data => {
+    console.log('Fetch /user/by-username data:', data);
+    if (data.success) {
+        const userId = data.userId;
+        return fetch(`${API_BASE_URL}/2fa/setup`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId })
+        });
+    } else {
+        throw new Error(data.message || 'User not found');
+    }
+})
+.then(res => {
+    console.log('Fetch /2fa/setup response status:', res.status);
+    return res.json();
+})
+    .then(data => {
+        console.log('Fetch /2fa/setup data:', data);
+        if (data.success) {
+            const qrImage = document.getElementById('two-factor-qr-image');
+            if (qrImage) {
+                qrImage.src = data.qrCodeDataUrl;
+                console.log('QR code image src set to:', qrImage.src);
+            }
+            modal.dataset.secret = data.secret;
+            modal.dataset.username = username;
+        } else {
+            errorDiv.textContent = data.message || 'Failed to get 2FA setup data';
+            errorDiv.style.display = 'block';
+        }
+    })
+.catch((err) => {
+    console.error('Error in openTwoFactorSetupModalForUsername:', err);
+    errorDiv.textContent = err.message || 'Network error while fetching 2FA setup data';
+    errorDiv.style.display = 'block';
+});
+
+}
+
+function closeTwoFactorSetupModal() {
+    const modal = document.getElementById('two-factor-setup-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        // Removed inline style display to avoid conflict with CSS opacity/visibility
+        // modal.style.display = 'none';
+    }
+}
+
+function verifyTwoFactorCode() {
+    const modal = document.getElementById('two-factor-setup-modal');
+    const codeInput = document.getElementById('two-factor-setup-code-input');
+    const errorDiv = document.getElementById('two-factor-setup-error');
+
+    const code = codeInput.value.trim();
+    if (!/^\d{6}$/.test(code)) {
+        errorDiv.textContent = 'Please enter a valid 6-digit code.';
+        errorDiv.style.display = 'block';
+        return;
+    }
+
+    const userId = modal.dataset.userId;
+    const username = modal.dataset.username;
+    const secret = modal.dataset.secret;
+
+    fetch(`${API_BASE_URL}/2fa/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, username, secret, code })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            alert('Two-Factor Authentication enabled successfully.');
+            closeTwoFactorSetupModal();
+        } else {
+            errorDiv.textContent = data.message || 'Failed to verify 2FA code.';
+            errorDiv.style.display = 'block';
+        }
+    })
+    .catch(err => {
+        console.error('Error verifying 2FA code:', err);
+        errorDiv.textContent = 'Network error while verifying 2FA code.';
+        errorDiv.style.display = 'block';
+    });
+}
+
+// Close 2FA setup modal
+document.getElementById('two-factor-setup-cancel-btn').addEventListener('click', () => {
+    const modal = document.getElementById('two-factor-setup-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+});
+
+// Verify 2FA setup code from modal
+document.getElementById('two-factor-setup-verify-btn').addEventListener('click', async () => {
+    const modal = document.getElementById('two-factor-setup-modal');
+    const codeInput = document.getElementById('two-factor-setup-code-input');
+    const errorDiv = document.getElementById('two-factor-setup-error');
+    const token = codeInput.value.trim();
+
+    if (!/^\d{6}$/.test(token)) {
+        errorDiv.textContent = 'Please enter a valid 6-digit code.';
+        errorDiv.style.display = 'block';
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/2fa/verify`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: state.currentUser.id, token })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            alert('Two-Factor Authentication enabled successfully!');
+            modal.classList.add('hidden');
+        } else {
+            errorDiv.textContent = data.message || 'Invalid 2FA code.';
+            errorDiv.style.display = 'block';
+        }
+    } catch {
+        errorDiv.textContent = 'Network error. Please try again.';
+        errorDiv.style.display = 'block';
+    }
+});
+
+// Modify loadUserStats to add 2FA setup button after user is set
+async function loadUserStats() {
+    if (!state.currentUser) {
+        // For guests, get best score from localStorage
+        const localBest = localStorage.getItem('bestScore');
+        if (localBest) {
+            state.bestScore = parseInt(localBest);
+            elements.best.textContent = state.bestScore;
+        }
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/user/${state.currentUser.id}/stats`);
+        const data = await response.json();
+
+        if (data.success) {
+            if (data.stats.bestScore !== undefined) {
+                state.bestScore = data.stats.bestScore;
+                elements.best.textContent = state.bestScore;
+            }
+            
+            if (data.stats.bestBlockTimes) {
+                state.bestBlockTimes = data.stats.bestBlockTimes;
+            }
+
+            // Add 2FA setup button
+            addTwoFactorSetupButton();
+        }
+    } catch (error) {
+        console.error('Failed to load user stats:', error);
+    }
+}
+
+// Show 2FA setup UI
+function showTwoFactorSetup() {
+    // Create container if not exists
+    let setupContainer = document.getElementById('two-factor-setup-container');
+    if (!setupContainer) {
+        setupContainer = document.createElement('div');
+        setupContainer.id = 'two-factor-setup-container';
+        setupContainer.innerHTML = `
+            <h3>Two-Factor Authentication Setup</h3>
+            <p>Scan the QR code below with your authenticator app, then enter the 6-digit code to enable 2FA.</p>
+            <div id="qr-code-container" style="margin: 10px 0;"></div>
+            <input type="text" id="two-factor-setup-code" maxlength="6" pattern="\\d{6}" placeholder="123456" />
+            <button id="two-factor-setup-verify">Verify & Enable 2FA</button>
+            <button id="two-factor-setup-cancel">Cancel</button>
+            <div id="two-factor-setup-error" class="error-message" style="display:none;color:red;margin-top:10px;"></div>
+        `;
+        document.body.appendChild(setupContainer);
+
+        document.getElementById('two-factor-setup-verify').addEventListener('click', () => {
+            verifyTwoFactorSetupCode();
+        });
+
+        document.getElementById('two-factor-setup-cancel').addEventListener('click', () => {
+            setupContainer.remove();
+        });
+    } else {
+        setupContainer.style.display = 'block';
+    }
+
+    // Fetch QR code and secret from backend
+    fetch(`${API_BASE_URL}/2fa/setup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: state.currentUser.id })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            const qrContainer = document.getElementById('qr-code-container');
+            qrContainer.innerHTML = `<img src="${data.qrCodeDataUrl}" alt="QR Code" />`;
+            setupContainer.dataset.secret = data.secret;
+        } else {
+            showError('two-factor-setup-error', data.message || 'Failed to get 2FA setup data');
+        }
+    })
+    .catch(() => {
+        showError('two-factor-setup-error', 'Network error while fetching 2FA setup data');
+    });
+}
+
+// Verify 2FA setup code
+async function verifyTwoFactorSetupCode() {
+    const setupContainer = document.getElementById('two-factor-setup-container');
+    const codeInput = document.getElementById('two-factor-setup-code');
+    const errorDiv = document.getElementById('two-factor-setup-error');
+    const token = codeInput.value.trim();
+
+    if (!/^\d{6}$/.test(token)) {
+        errorDiv.textContent = 'Please enter a valid 6-digit code.';
+        errorDiv.style.display = 'block';
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/2fa/verify`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: state.currentUser.id, token })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            alert('Two-Factor Authentication enabled successfully!');
+            setupContainer.remove();
+        } else {
+            errorDiv.textContent = data.message || 'Invalid 2FA code.';
+            errorDiv.style.display = 'block';
+        }
+    } catch {
+        errorDiv.textContent = 'Network error. Please try again.';
+        errorDiv.style.display = 'block';
+    }
 }
 
 // В функции setupEventListeners() заменяем текущие обработчики на:
@@ -362,25 +903,115 @@ async function handleLogin(e) {
         const data = await response.json();
 
         if (data.success) {
-            // Полный сброс перед установкой нового пользователя
-            state.currentUser = null;
-            state.bestScore = 0;
-            state.bestBlockTimes = {};
-            
-            // Установка нового пользователя
-            state.currentUser = data.user;
-            elements.best.textContent = '0'; // Сброс перед загрузкой
-            
-            document.querySelector('.form').classList.add('hidden');
-            elements.mainMenu.classList.remove('hidden');
-            
-            // Загрузка актуальных данных пользователя
-            await loadUserStats();
+            if (data.twoFactorRequired) {
+                // Show 2FA input form
+                showTwoFactorForm(data.userId);
+            } else if (data.twoFactorSetupRequired) {
+                // Show 2FA setup modal for users who need to set up 2FA
+                state.currentUser = data.user;
+                openTwoFactorSetupModal();
+            } else {
+                // Полный сброс перед установкой нового пользователя
+                state.currentUser = null;
+                state.bestScore = 0;
+                state.bestBlockTimes = {};
+                
+                // Установка нового пользователя
+                state.currentUser = data.user;
+                elements.best.textContent = '0'; // Сброс перед загрузкой
+                
+                document.querySelector('.form').classList.add('hidden');
+                elements.mainMenu.classList.remove('hidden');
+                
+                // Загрузка актуальных данных пользователя
+                await loadUserStats();
+            }
         } else {
             showError('login-error', data.message || 'Login failed');
         }
     } catch (error) {
         showError('login-error', 'Network error. Please try again.');
+    }
+}
+
+// Show 2FA input form
+function showTwoFactorForm(userId) {
+    // Hide login form
+    elements.loginForm.classList.add('hidden');
+
+    // Create 2FA form container if not exists
+    let twoFactorContainer = document.getElementById('two-factor-container');
+    if (!twoFactorContainer) {
+        twoFactorContainer = document.createElement('div');
+        twoFactorContainer.id = 'two-factor-container';
+        twoFactorContainer.innerHTML = `
+            <h3>Two-Factor Authentication</h3>
+            <p>Please enter the 6-digit code from your authenticator app.</p>
+            <input type="text" id="two-factor-code" maxlength="6" pattern="\\d{6}" placeholder="123456" />
+            <button id="two-factor-submit">Verify</button>
+            <button id="two-factor-cancel">Cancel</button>
+            <div id="two-factor-error" class="error-message" style="display:none;color:red;margin-top:10px;"></div>
+        `;
+        elements.loginForm.parentNode.insertBefore(twoFactorContainer, elements.loginForm.nextSibling);
+
+        document.getElementById('two-factor-submit').addEventListener('click', () => {
+            verifyTwoFactorCode(userId);
+        });
+
+        document.getElementById('two-factor-cancel').addEventListener('click', () => {
+            twoFactorContainer.remove();
+            elements.loginForm.classList.remove('hidden');
+        });
+    } else {
+        twoFactorContainer.style.display = 'block';
+    }
+}
+
+// Verify 2FA code
+async function verifyTwoFactorCode(userId) {
+    const codeInput = document.getElementById('two-factor-code');
+    const errorDiv = document.getElementById('two-factor-error');
+    const token = codeInput.value.trim();
+
+    if (!/^\d{6}$/.test(token)) {
+        errorDiv.textContent = 'Please enter a valid 6-digit code.';
+        errorDiv.style.display = 'block';
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/2fa/login`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ userId, token })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            // Hide 2FA form
+            const twoFactorContainer = document.getElementById('two-factor-container');
+            if (twoFactorContainer) {
+                twoFactorContainer.remove();
+            }
+
+            // Set current user and show main menu
+            state.currentUser = data.user;
+            elements.best.textContent = '0'; // Reset before loading
+            document.querySelector('.form').classList.add('hidden');
+            elements.mainMenu.classList.remove('hidden');
+
+            // Load user stats
+            await loadUserStats();
+        } else {
+            errorDiv.textContent = data.message || 'Invalid 2FA code.';
+            errorDiv.style.display = 'block';
+        }
+    } catch (error) {
+        errorDiv.textContent = 'Network error. Please try again.';
+        errorDiv.style.display = 'block';
     }
 }
 
@@ -433,10 +1064,17 @@ async function handleRegister(e) {
         }
 
         if (data.success) {
-            alert('Registration successful! Please login.');
+            alert('Registration successful! Please set up Two-Factor Authentication.');
             document.querySelector('.form-panel.two').classList.remove('active');
             document.querySelector('.form-panel.one').classList.remove('hidden');
             elements.registerForm.reset();
+
+            // Automatically open 2FA setup modal after registration
+            // Simulate user login state for 2FA setup
+            state.currentUser = data.user || { id: data.userId || null };
+            if (state.currentUser && state.currentUser.id) {
+                openTwoFactorSetupModal();
+            }
         } else {
             showError('register-error', data.message || 'Registration failed');
         }
