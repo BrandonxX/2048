@@ -980,7 +980,7 @@ async function verifyTwoFactorCode(userId) {
     }
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/2fa/login`, {
+        const response = await fetch(`${API_BASE_URL}/2fa/login`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
