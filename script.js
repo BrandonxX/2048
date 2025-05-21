@@ -950,10 +950,11 @@ function showTwoFactorForm(userId) {
         twoFactorContainer.id = 'two-factor-container';
         twoFactorContainer.innerHTML = `
             <h3>Two-Factor Authentication</h3>
-            <p>Please enter the 6-digit code from your authenticator app.</p>
+            <p>Please enter the 6-digit code from Google Authenticator.</p>
             <input type="text" id="two-factor-code" maxlength="6" pattern="\\d{6}" placeholder="123456" />
-            <button id="two-factor-submit">Verify</button>
-            <button id="two-factor-cancel">Cancel</button>
+            <br></br>
+            <button id="two-factor-submit" style="padding: 10px 15px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; width:45%">Verify</button>
+            <button id="two-factor-cancel" style="padding: 10px 15px; background-color: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer; width:45%">Cancel</button>
             <div id="two-factor-error" class="error-message" style="display:none;color:red;margin-top:10px;"></div>
         `;
         elements.loginForm.parentNode.insertBefore(twoFactorContainer, elements.loginForm.nextSibling);
