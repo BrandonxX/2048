@@ -5,9 +5,8 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    height: 100vh;
     margin: 0;
-    overflow: hidden !important;
+    overflow: hidden;
 }
 
 #toggle-sound, #toggle-music {
@@ -26,21 +25,18 @@ body {
     z-index: 1000;
 }
 
-#toggle-music{
-    top: 70px; /* Отступ сверху для кнопки музыки */
+#toggle-music {
+    top: 70px;
 }
 
-/* Главное меню */
 .main-menu {
     display: flex;
     flex-direction: column;
     text-align: center;
-    align-items: center; /* Центрирование содержимого */
-    justify-content: center; /* Центрирование содержимого */
-    height: 100vh; /* Занимаем всю высоту экрана */
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
     width: 100%;
-    margin: 0;
-    padding: 0;
     position: fixed;
     top: 0;
     left: 0;
@@ -61,14 +57,15 @@ body {
     border-radius: 5px;
     cursor: pointer;
     margin: 10px 0;
-    width: 100%; /* Занимаем всю ширину кнопки */
+    width: 100%;
+    transition: transform 0.2s ease;
 }
 
 .main-menu button:hover {
     background-color: #9c8b77;
+    transform: scale(0.95);
 }
 
-/* Игровой интерфейс */
 .container {
     display: flex;
     flex-direction: column;
@@ -101,11 +98,7 @@ body {
     font-size: 22px;
     color: white;
     font-weight: bold;
-    font-family: monospace; /* Моноширинный шрифт */
-}
-
-.container.hidden {
-    display: none;
+    font-family: monospace;
 }
 
 h1 {
@@ -133,10 +126,12 @@ h1 {
     border-radius: 5px;
     cursor: pointer;
     min-width: 100px;
+    transition: transform 0.2s ease;
 }
 
 #menu-button:hover, #restart:hover {
     background-color: #9c8b77;
+    transform: scale(0.95);
 }
 
 .score-container {
@@ -165,10 +160,10 @@ h1 {
 }
 
 .game-container {
-    display: flex; /* Используем flex для расположения в одной строке */
-    gap: 20px; /* Расстояние между сеткой и блоком Block Times */
+    display: flex;
+    gap: 20px;
     align-items: flex-start;
-    position: relative; /* Для псевдоэлемента */
+    position: relative;
 }
 
 .grid {
@@ -198,7 +193,6 @@ h1 {
     color: #776e65;
 }
 
-
 .instructions {
     margin-top: 20px;
     font-size: 18px;
@@ -206,19 +200,10 @@ h1 {
     width: fit-content;
 }
 
-/*
-.hidden {
-    display: none;
-    opacity: 0;
-    visibility: hidden;
-}
-    */
-    
 .hidden {
     display: none !important;
 }
 
-/* Модальное окно */
 .modal {
     display: flex;
     position: fixed;
@@ -254,15 +239,6 @@ h1 {
     transform: translateY(0);
 }
 
-@media (max-width: 500px) {
-    .modal-content {
-        width: 90%;
-        padding: 10px;
-    }
-}
-
-/* Форма регистрации и входа */
-/* Основные стили для формы */
 .form {
     position: fixed;
     top: 50%;
@@ -277,7 +253,6 @@ h1 {
     overflow: hidden;
 }
 
-/* Стили для панелей */
 .form-panel {
     padding: 60px calc(10% + 60px) 60px 60px;
     box-sizing: border-box;
@@ -308,7 +283,6 @@ h1 {
     cursor: default;
 }
 
-/* Стили для заголовков */
 .form-header {
     margin: 0 0 40px;
 }
@@ -328,7 +302,6 @@ h1 {
     color: #FFFFFF;
 }
 
-/* Стили для групп полей */
 .form-group {
     display: flex;
     flex-wrap: wrap;
@@ -405,7 +378,6 @@ h1 {
     color: #9c8b77;
 }
 
-/* Стили для кнопки переключения */
 #switch-to-register {
     background: #9c8b77;
     color: white;
@@ -418,35 +390,25 @@ h1 {
     width: 100%;
 }
 
-#switch-to-register:hover {
-    background: #9c8b77;
-}
-
-/* Скрытие и отображение панелей */
-.hidden {
-    display: none;
-}
-
 .back-to-login {
     position: absolute;
-    top: 58px; /* Высота, равная заголовку */
-    right: 118px; /* Отступ справа */
-    border: 2px solid #9c8b77; /* Граница, как у кнопки Register */
-    color: #9c8b77; /* Цвет текста, как у заголовка */
+    top: 58px;
+    right: 118px;
+    border: 2px solid #9c8b77;
+    color: #9c8b77;
     font-size: 14px;
     cursor: pointer;
-    padding: 10px 20px; /* Отступы, как у кнопки Register */
-    border-radius: 4px; /* Скругление углов, как у кнопки Register */
+    padding: 10px 20px;
+    border-radius: 4px;
     transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Блок Block Times */
 .block-times {
     background-color: #bbada0;
     padding: 10px 20px;
     border-radius: 5px;
     text-align: center;
-    width: 200px; /* Ширина блока */
+    width: 200px;
     box-sizing: border-box;
     position: fixed;
     right: 100px;
@@ -464,7 +426,7 @@ h1 {
     margin-top: 10px;
     font-size: 14px;
     color: white;
-    font-family: monospace; /* Моноширинный шрифт для времени */
+    font-family: monospace;
 }
 
 #block-times-list div {
@@ -473,7 +435,7 @@ h1 {
     color: white;
     font-family: monospace;
 }
-/* Стили для блока лучших результатов */
+
 .best-results-block {
     background-color: #bbada0;
     padding: 10px 20px;
@@ -494,7 +456,6 @@ h1 {
     font-family: monospace;
 }
 
-/* Стили для таблицы рейтинга */
 #rating-list {
     width: 100%;
     margin: 20px 0;
@@ -525,7 +486,6 @@ h1 {
     color: #f65e3b;
 }
 
-/* Стили для расширенного рейтинга */
 .rating-tabs {
     display: flex;
     margin-bottom: 15px;
@@ -552,22 +512,52 @@ h1 {
     width: 100%;
     border-collapse: collapse;
     margin: 15px 0;
+    table-layout: fixed;
+    font-size: 16px;
+}
+
+.rating-table th, 
+.rating-table td {
+    padding: 12px 8px;
+    border-bottom: 1px solid #eee4da;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.rating-table th:nth-child(1),
+.rating-table td:nth-child(1) {
+    width: 15%;
+}
+
+.rating-table th:nth-child(2),
+.rating-table td:nth-child(2) {
+    width: 35%;
+}
+
+.rating-table th:nth-child(3),
+.rating-table td:nth-child(3) {
+    width: 30%;
+}
+
+.rating-table th:nth-child(4),
+.rating-table td:nth-child(4) {
+    width: 20%;
 }
 
 .rating-table th {
     background-color: #bbada0;
     color: white;
-    padding: 10px;
-    text-align: left;
-}
-
-.rating-table td {
-    padding: 12px 10px;
-    border-bottom: 1px solid #eee4da;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 .rating-table tr:nth-child(even) {
     background-color: #faf8ef;
+}
+
+.rating-table tr:hover {
+    background-color: #eee4da;
 }
 
 .rating-table tr.current-user {
@@ -577,17 +567,17 @@ h1 {
 }
 
 .rating-table tr.medal-1 td:first-child::before {
-    content: "🥇";
+    content: "рџҐ‡";
     margin-right: 5px;
 }
 
 .rating-table tr.medal-2 td:first-child::before {
-    content: "🥈";
+    content: "рџҐ€";
     margin-right: 5px;
 }
 
 .rating-table tr.medal-3 td:first-child::before {
-    content: "🥉";
+    content: "рџҐ‰";
     margin-right: 5px;
 }
 
@@ -616,10 +606,6 @@ h1 {
     transform: none !important;
 }
 
-.rating-pagination button:disabled:hover {
-    background: #bbada0;
-}
-
 .modal-close-btn {
     background: #f65e3b;
     color: white;
@@ -631,7 +617,6 @@ h1 {
     width: 100%;
 }
 
-/* Стили для индикатора загрузки */
 .loading-spinner {
     text-align: center;
     padding: 30px;
@@ -661,240 +646,6 @@ h1 {
     border-bottom-color: #f65e3b;
     border-radius: 50%;
     animation: spin 1.5s linear infinite;
-}
-
-.rating-table tr {
-    transition: all 0.2s ease;
-}
-.rating-table tr:hover {
-    transform: scale(1.02);
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-@media (max-width: 600px) {
-    .rating-table td, .rating-table th {
-        padding: 8px 5px;
-        font-size: 14px;
-    }
-    .modal-content {
-        width: 95% !important;
-    }
-}
-
-/* Пароль */
-
-.password-hint-trigger {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    vertical-align: middle;
-    margin-left: 5px;
-}
-
-.hint-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 18px;
-    height: 18px;
-    background: white;
-    border: 1px solid #bbada0;
-    border-radius: 50%;
-    color: #776e65;
-    font-size: 12px;
-    font-weight: bold;
-    line-height: 1;
-    cursor: help;
-    transition: all 0.2s ease;
-}
-
-.password-hint-trigger:hover .hint-icon {
-    background: #f8f1e9;
-    border-color: #8f7a66;
-}
-
-.password-hint {
-    position: absolute;
-    left: 50%;
-    bottom: calc(100% + 10px);
-    transform: translateX(-50%);
-    width: 200px;
-    max-height: 150px;
-    padding: 10px;
-    background: #faf8ef;
-    border: 1px solid #bbada0;
-    border-radius: 8px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-    font-size: 11px;
-    line-height: 1.5;
-    color: #776e65;
-    z-index: 1000;
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.3s ease;
-    overflow-y: auto; /* На случай длинного списка */
-    white-space: normal;
-}
-
-.password-hint-trigger:hover .password-hint {
-    opacity: 1;
-    visibility: visible;
-    transform: translateX(-50%) translateY(-5px);
-}
-
-.password-hint:after {
-    content: "";
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    border-width: 8px;
-    border-style: solid;
-    border-color: #faf8ef transparent transparent transparent;
-}
-
-.hint-header {
-    font-weight: bold;
-    margin-bottom: 8px;
-    color: #8f7a66;
-    font-size: 13px;
-}
-
-.hint-list {
-    padding-left: 15px;
-    margin: 10px 0 0;
-}
-
-.hint-list li {
-    margin-bottom: 5px;
-}
-
-.error-message {
-    color: #f65e3b;
-    font-size: 16px;
-    margin-top: 5px;
-    display: none;
-}
-
-.password-container {
-    position: relative;
-    width: 200px;
-}
-
-.toggle-password {
-    position: absolute;
-    right: 130px;
-    top: 252px;
-    cursor: pointer;
-}
-
-.register-toggle { /* 45 40 */
-    position: absolute;
-    top: 260px;
-}
-
-.register-c-toggle {
-    position: absolute;
-    top: 345px;
-}
-
-button {
-    transition: transform 0.2s ease;
-}
-
-button:hover {
-    transform: scale(0.95); /* Уменьшение кнопки при наведении */
-}
-
-/* Анимация появления новых плиток */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: scale(0.5);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1);
-    }
-}
-
-.new-tile {
-    animation: fadeIn 0.3s ease-in-out;
-}
-
-/* Анимация слияния плиток */
-@keyframes mergeAnimation {
-    0% {
-        transform: scale(1);
-    }
-    50% {
-        transform: scale(1.2);
-    }
-    100% {
-        transform: scale(1);
-    }
-}
-
-.merging {
-    animation: mergeAnimation 0.2s ease-in-out;
-}
-
-/* Обновленные стили для таблицы рейтинга */
-.rating-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 15px 0;
-    table-layout: fixed; /* Фиксированная ширина колонок */
-    font-size: 16px;
-}
-
-.rating-table th, 
-.rating-table td {
-    padding: 12px 8px;
-    border-bottom: 1px solid #eee4da;
-    text-align: center; /* Центрирование текста по горизонтали */
-    vertical-align: middle; /* Центрирование по вертикали */
-}
-
-/* Ширина колонок */
-.rating-table th:nth-child(1),
-.rating-table td:nth-child(1) {
-    width: 15%; /* Rank */
-}
-
-.rating-table th:nth-child(2),
-.rating-table td:nth-child(2) {
-    width: 35%; /* Player */
-}
-
-.rating-table th:nth-child(3),
-.rating-table td:nth-child(3) {
-    width: 30%; /* Score/Time */
-}
-
-/* Для вкладки Block Times */
-.rating-table th:nth-child(4),
-.rating-table td:nth-child(4) {
-    width: 20%; /* Time (только для Block Times) */
-}
-
-/* Стили для заголовков */
-.rating-table th {
-    background-color: #bbada0;
-    color: white;
-    font-weight: bold;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-/* Стили для строк */
-.rating-table tr:nth-child(even) {
-    background-color: #faf8ef;
-}
-
-.rating-table tr:hover {
-    background-color: #eee4da;
 }
 
 .loading-text {
@@ -992,7 +743,6 @@ button:hover {
     transform: translateY(-2px);
 }
 
-/* Специфичные стили для вкладки Block Times */
 .blocks-table {
     width: 100%;
     border-collapse: collapse;
@@ -1037,7 +787,6 @@ button:hover {
     padding-left: 15px;
 }
 
-/* Цвета для разных блоков */
 .blocks-table .block-8 { background-color: #f2b17920; }
 .blocks-table .block-16 { background-color: #f5956320; }
 .blocks-table .block-32 { background-color: #f67c5f20; }
@@ -1047,22 +796,6 @@ button:hover {
 .blocks-table .block-512 { background-color: #edc85020; }
 .blocks-table .block-1024 { background-color: #edc53f20; }
 .blocks-table .block-2048 { background-color: #edc22e20; }
-
-/* Адаптивность для мобильных устройств */
-@media (max-width: 600px) {
-    .blocks-table th, 
-    .blocks-table td {
-        padding: 8px 4px;
-        font-size: 14px;
-    }
-    
-    .blocks-table .player-name {
-        max-width: 100px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-}
 
 .block-selector {
     margin-bottom: 15px;
@@ -1118,7 +851,10 @@ button:hover {
     background: #bbada0;
     border-radius: 5px;
     outline: none;
-    transition: background 0.3s ease;
+    transition-property: background-color;
+    transition-duration: 0.3s;
+    transition-timing-function: ease;
+    transition-delay: 0s;
 }
 
 #volume-controls input[type="range"]::-webkit-slider-thumb {
@@ -1129,7 +865,10 @@ button:hover {
     background: #8f7a66;
     border-radius: 50%;
     cursor: pointer;
-    transition: background 0.3s ease;
+    transition-property: background-color;
+    transition-duration: 0.3s;
+    transition-timing-function: ease;
+    transition-delay: 0s;
 }
 
 #volume-controls input[type="range"]::-moz-range-thumb {
@@ -1138,7 +877,10 @@ button:hover {
     background: #8f7a66;
     border-radius: 50%;
     cursor: pointer;
-    transition: background 0.3s ease;
+    transition-property: background-color;
+    transition-duration: 0.3s;
+    transition-timing-function: ease;
+    transition-delay: 0s;
 }
 
 #volume-controls input[type="range"]:hover::-webkit-slider-thumb {
@@ -1175,3 +917,182 @@ button:hover {
 .tile-color-512 { background-color: #edc850; }
 .tile-color-1024 { background-color: #edc53f; }
 .tile-color-2048 { background-color: #edc22e; }
+
+.password-hint-trigger {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    vertical-align: middle;
+    margin-left: 5px;
+}
+
+.hint-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    background: white;
+    border: 1px solid #bbada0;
+    border-radius: 50%;
+    color: #776e65;
+    font-size: 12px;
+    font-weight: bold;
+    line-height: 1;
+    cursor: help;
+    transition: all 0.2s ease;
+}
+
+.password-hint-trigger:hover .hint-icon {
+    background: #f8f1e9;
+    border-color: #8f7a66;
+}
+
+.password-hint {
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 10px);
+    transform: translateX(-50%);
+    width: 200px;
+    max-height: 150px;
+    padding: 10px;
+    background: #faf8ef;
+    border: 1px solid #bbada0;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    font-size: 11px;
+    line-height: 1.5;
+    color: #776e65;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    overflow-y: auto;
+    white-space: normal;
+}
+
+.password-hint-trigger:hover .password-hint {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(-5px);
+}
+
+.password-hint:after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 8px;
+    border-style: solid;
+    border-color: #faf8ef transparent transparent transparent;
+}
+
+.hint-header {
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: #8f7a66;
+    font-size: 13px;
+}
+
+.hint-list {
+    padding-left: 15px;
+    margin: 10px 0 0;
+}
+
+.hint-list li {
+    margin-bottom: 5px;
+}
+
+.error-message {
+    color: #f65e3b;
+    font-size: 16px;
+    margin-top: 5px;
+    display: none;
+}
+
+.password-container {
+    position: relative;
+    width: 200px;
+}
+
+.toggle-password {
+    position: absolute;
+    right: 130px;
+    top: 252px;
+    cursor: pointer;
+}
+
+.register-toggle {
+    position: absolute;
+    top: 260px;
+}
+
+.register-c-toggle {
+    position: absolute;
+    top: 345px;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.5);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.new-tile {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes mergeAnimation {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.merging {
+    animation: mergeAnimation 0.2s ease-in-out;
+}
+
+@media (max-width: 600px) {
+    .modal-content {
+        width: 95% !important;
+    }
+    
+    .blocks-table th, 
+    .blocks-table td {
+        padding: 8px 4px;
+        font-size: 14px;
+    }
+    
+    .blocks-table .player-name {
+        max-width: 100px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    
+    .rating-table td, 
+    .rating-table th {
+        padding: 8px 5px;
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 500px) {
+    .modal-content {
+        width: 90%;
+        padding: 10px;
+    }
+}

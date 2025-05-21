@@ -943,6 +943,12 @@ function showTwoFactorForm(userId) {
     // Hide login form
     elements.loginForm.classList.add('hidden');
 
+    // Hide "CREATE ACCOUNT" button
+    const createAccountBtn = document.getElementById('switch-to-register');
+    if (createAccountBtn) {
+        createAccountBtn.style.display = 'none';
+    }
+
     // Create 2FA form container if not exists
     let twoFactorContainer = document.getElementById('two-factor-container');
     if (!twoFactorContainer) {
@@ -966,6 +972,11 @@ function showTwoFactorForm(userId) {
         document.getElementById('two-factor-cancel').addEventListener('click', () => {
             twoFactorContainer.remove();
             elements.loginForm.classList.remove('hidden');
+
+            // Show "CREATE ACCOUNT" button again
+            if (createAccountBtn) {
+                createAccountBtn.style.display = 'block';
+            }
         });
     } else {
         twoFactorContainer.style.display = 'block';
