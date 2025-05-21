@@ -900,6 +900,10 @@ async function handleLogin(e) {
             body: JSON.stringify({ username, password })
         });
 
+        if (response.status === 429) {
+            return showError('login-error','Слишком много попыток. Попробуйте позже.');
+        }
+
         const data = await response.json();
 
         if (data.success) {
@@ -927,7 +931,7 @@ async function handleLogin(e) {
                 await loadUserStats();
             }
         } else {
-            showError('login-error', data.message || 'Login failed');
+            showError('login-error', 'Неправильный логин или пароль');
         }
     } catch (error) {
         showError('login-error', 'Network error. Please try again.');
@@ -2076,7 +2080,7 @@ function showError(elementId, message) {
         // Автоматическое скрытие через 5 секунд
         setTimeout(() => {
             element.style.display = 'none';
-        }, 5000);
+        }, 10000);
     }
 }
 
