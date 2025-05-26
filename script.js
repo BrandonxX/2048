@@ -628,11 +628,11 @@ document.getElementById('switch-to-login').addEventListener('click', function(e)
 // Добавляем новую функцию для обновления высоты формы
 function updateFormHeight() {
     const form = document.querySelector('.form');
-    const activePanel = document.querySelector('.form-panel.one:not(.hidden), .form-panel.two.active');
+    const activePanel = document.querySelector('.form-panel.one').classList.contains('hidden') 
+        ? document.querySelector('.form-panel.two')
+        : document.querySelector('.form-panel.one');
     
-    if (activePanel) {
-        form.style.height = activePanel.offsetHeight + 'px';
-    }
+    form.style.height = activePanel.offsetHeight + 'px';
 }
 
 // Функция для воспроизведения музыки главного меню
@@ -773,11 +773,6 @@ function setupEventListeners() {
         logout();
     });
 
-    document.getElementById('close-rating-modal').addEventListener('click', () => {
-    // Сбрасываем текущий блок при закрытии
-    state.currentBlock = null;
-    elements.ratingModal.classList.add('hidden');
-    });
     // Модальные окна
     document.getElementById('close-modal').addEventListener('click', () => {
         playClickSound();
@@ -1105,8 +1100,48 @@ async function handleRegister(e) {
     }
 }
 
+// Выход из системы
 function logout() {
-    location.reload();
+    // Полный сброс состояния
+    state.currentUser = null;
+    state.bestScore = 0;
+    state.bestBlockTimes = {};
+    state.score = 0;
+    
+    // Сброс UI
+    elements.best.textContent = '0';
+    elements.score.textContent = '0';
+    
+    // Переключение интерфейсов
+    elements.mainMenu.classList.add('hidden');
+    document.querySelector('.form').classList.remove('hidden');
+    
+    // Сброс игры
+    resetGame();
+    
+    // Остановка музыки игры
+    stopGameMusic();
+}
+
+// Загрузка статистики пользователя
+async function loadUserStats() {
+    if (!state.currentUser) return;
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/user/${state.currentUser.id}/stats`);
+        const data = await response.json();
+
+        if (data.success) {
+            state.bestScore = data.stats.bestScore || 0;
+            elements.best.textContent = state.bestScore;
+            
+            if (data.stats.bestBlockTimes) {
+                state.bestBlockTimes = data.stats.bestBlockTimes;
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load user stats:', error);
+    }
 }
 
 // Функция для воспроизведения звука нажатия
@@ -1555,6 +1590,29 @@ function copyToClipboard(text) {
     document.body.removeChild(textarea);
 }
 
+// Функция для загрузки статистики пользователя (обновленная)
+async function loadUserStats() {
+    if (!state.currentUser) return;
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/user/${state.currentUser.id}/stats`);
+        const data = await response.json();
+
+        if (data.success) {
+            // Обновляем только если серверное значение больше текущего
+            if (data.stats.bestScore > state.bestScore) {
+                state.bestScore = data.stats.bestScore;
+                elements.best.textContent = state.bestScore;
+            }
+            
+            if (data.stats.bestBlockTimes) {
+                state.bestBlockTimes = data.stats.bestBlockTimes;
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load user stats:', error);
+    }
+}
 
 // Функция сброса игры (обновленная)
 function resetGame() {
@@ -1699,6 +1757,43 @@ async function loadUserStats() {
         const data = await response.json();
 
         if (data.success) {
+            // Обновляем только если серверное значение больше текущего
+            if (data.stats.bestScore > state.bestScore) {
+                state.bestScore = data.stats.bestScore;
+                elements.best.textContent = state.bestScore;
+            }
+            
+            // Обновляем bestBlockTimes
+            if (data.stats.bestBlockTimes) {
+                state.bestBlockTimes = data.stats.bestBlockTimes;
+            }
+            
+            // Принудительно обновляем Best Results
+            renderBestResults();
+        }
+    } catch (error) {
+        console.error('Failed to load user stats:', error);
+    }
+}
+
+
+// Обновленная функция loadUserStats
+async function loadUserStats() {
+    if (!state.currentUser) {
+        // Для гостей берем данные из localStorage
+        const localBest = localStorage.getItem('bestScore');
+        if (localBest) {
+            state.bestScore = parseInt(localBest);
+            elements.best.textContent = state.bestScore;
+        }
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/user/${state.currentUser.id}/stats`);
+        const data = await response.json();
+
+        if (data.success) {
             // Обновляем bestScore независимо от текущего значения
             if (data.stats.bestScore !== undefined) {
                 state.bestScore = data.stats.bestScore;
@@ -1741,43 +1836,38 @@ async function loadRatingData() {
     await new Promise(resolve => setTimeout(resolve, loadingDelay));
     
     try {
-        const endpoint = `${API_BASE_URL}/leaderboard/${state.currentRatingMode}`;
+        let endpoint = `${API_BASE_URL}/leaderboard/${state.currentRatingMode}`;
         let queryParams = `page=${state.currentRatingPage}&limit=${state.ratingPerPage}`;
         
+        // Для Block Times добавляем параметр блока
         if (state.currentRatingMode === 'blocks') {
+            // Сохраняем выбранный блок между запросами
             const selectedBlock = state.currentBlock || 8;
-            queryParams = `block=${selectedBlock}&${queryParams}`;
+            endpoint += `?block=${selectedBlock}&${queryParams}`;
+        } else {
+            endpoint += `?${queryParams}`;
         }
-
-        const response = await fetch(`${endpoint}?${queryParams}`);
+        
+        const response = await fetch(endpoint);
         const data = await response.json();
-
+        
         if (data.success) {
-            // Проверка на пустые данные
-            if (data.data.length === 0) {
-                // Сброс на первую страницу, если нет данных
-                state.currentRatingPage = 1;
-                
-                // Показываем сообщение об отсутствии данных
-                elements.ratingContent.innerHTML = `
-                    <div class="no-results">
-                        <p>No ${state.currentRatingMode} records found yet</p>
-                        ${state.currentRatingMode === 'blocks' ? 
-                           '<p>Be the first to complete blocks in speedrun mode!</p>' : ''}
-                    </div>
-                `;
-                
-                // Обновляем пагинацию с учетом отсутствия данных
-                updatePaginationButtons({ total: 0 });
+            if (data.data.length === 0 && state.currentRatingPage > 1) {
+                state.currentRatingPage--;
+                await loadRatingData();
                 return;
             }
-
+            
             renderRatingData(data);
             updatePaginationButtons(data.meta);
             
+            // Всегда показываем селектор для Block Times, даже если нет данных
             if (state.currentRatingMode === 'blocks') {
-                addBlockSelector(data.meta?.current_block || state.currentBlock || 8);
+                const currentBlock = data.meta?.current_block || state.currentBlock || 8;
+                addBlockSelector(currentBlock);
             }
+        } else {
+            elements.ratingContent.innerHTML = '<div class="error">Failed to load data</div>';
         }
     } catch (error) {
         elements.ratingContent.innerHTML = `
@@ -1845,21 +1935,12 @@ function updatePaginationButtons(meta) {
     const nextBtn = document.getElementById('next-page');
     const pageInfo = document.getElementById('page-info');
     
-    // Проверка на отсутствие данных
-    if (meta.total === 0) {
-        prevBtn.disabled = true;
-        nextBtn.disabled = true;
-        prevBtn.classList.add('disabled');
-        nextBtn.classList.add('disabled');
-        pageInfo.textContent = 'No records';
-        return;
-    }
+    // Обновляем информацию о странице
+    pageInfo.textContent = `Page ${state.currentRatingPage} of ${Math.ceil(meta.total / state.ratingPerPage)}`;
     
-    const totalPages = Math.ceil(meta.total / state.ratingPerPage);
-    pageInfo.textContent = `Page ${state.currentRatingPage} of ${totalPages}`;
-    
+    // Обновляем состояние кнопок
     prevBtn.disabled = state.currentRatingPage <= 1;
-    nextBtn.disabled = state.currentRatingPage >= totalPages;
+    nextBtn.disabled = state.currentRatingPage >= Math.ceil(meta.total / state.ratingPerPage);
 
     if (prevBtn.disabled) {
         prevBtn.classList.add('disabled');
@@ -1876,162 +1957,128 @@ function updatePaginationButtons(meta) {
 
 // Отрисовка данных рейтинга
 function renderRatingData(data) {
-    elements.ratingContent.innerHTML = '';
-
-    // Проверяем наличие данных
-    const hasData = data.data && 
-                   (Array.isArray(data.data) ? data.data.length > 0 : 
-                   Object.keys(data.data).length > 0);
-
-    if (!hasData) {
-        // Для режима Block Times всегда показываем селектор, даже если нет данных
-        if (state.currentRatingMode === 'blocks') {
-            addBlockSelector(state.currentBlock || 8);
-            
-            elements.ratingContent.innerHTML += `
-                <div class="no-results">
-                    <p>No records found for block ${state.currentBlock || 8}</p>
-                    <p>Be the first to complete this block in speedrun mode!</p>
-                </div>
-            `;
-        } else {
-            elements.ratingContent.innerHTML = `
-                <div class="no-results">
-                    <p>No ${state.currentRatingMode} records found yet</p>
-                </div>
-            `;
-        }
-        return;
-    }
-
     let html = '';
-    const isBlocksMode = state.currentRatingMode === 'blocks';
     
-    if (isBlocksMode) {
-        // Добавляем селектор блоков в начало
-        addBlockSelector(state.currentBlock || data.meta?.current_block || 8);
-        
-        const blocksData = Array.isArray(data.data) ? data.data : Object.values(data.data);
-        
+    if (state.currentRatingMode === 'blocks') {
+        // Специальный рендеринг для Block Times
         html = `
-            <div class="rating-table-container">
-                <table class="rating-table blocks-table">
+            <div class="blocks-table-container">
+                <table class="blocks-table">
                     <thead>
                         <tr>
-                            <th width="15%">RANK</th>
-                            <th width="35%">PLAYER</th>
-                            <th width="20%">BLOCK</th>
-                            <th width="30%">TIME</th>
+                            <th width="15%">Rank</th>
+                            <th width="35%">Player</th>
+                            <th width="20%">Block</th>
+                            <th width="30%">Time</th>
                         </tr>
                     </thead>
                     <tbody>
         `;
-
-        blocksData.forEach((item, index) => {
-            const globalIndex = (state.currentRatingPage - 1) * state.ratingPerPage + index + 1;
-            const isCurrentUser = state.currentUser && item.user_id === state.currentUser.id;
-            const medal = state.currentRatingPage === 1 && index < 3 ? 
-                ['🥇','🥈','🥉'][index] : '';
-            
+        
+        if (data.data.length === 0) {
             html += `
-                <tr class="block-${item.block_value}">
-                    <td>${medal} ${globalIndex}</td>
-                    <td class="player-name">
-                        ${item.username}
-                        ${isCurrentUser ? '<span class="you-badge"></span>' : ''}
-                    </td>
-                    <td>${item.block_value}</td>
-                    <td>${formatTime(item.block_time)}</td>
+                <tr>
+                    <td colspan="4" class="no-data">No block times recorded yet</td>
                 </tr>
             `;
-        });
-
+        } else {
+            data.data.forEach((item, index) => {
+                const globalIndex = (state.currentRatingPage - 1) * state.ratingPerPage + index + 1;
+                const isCurrentUser = state.currentUser && item.user_id === state.currentUser.id;
+                let rowClass = isCurrentUser ? 'current-user' : '';
+                rowClass += ` block-${item.block_value}`;
+                
+                html += `
+                    <tr class="${rowClass.trim()}">
+                        <td>${globalIndex}</td>
+                        <td class="player-name" title="${item.username}">
+                            ${item.username}
+                            ${isCurrentUser ? ' (You)' : ''}
+                        </td>
+                        <td class="block-value">${item.block_value}</td>
+                        <td class="block-time" title="${item.block_time} ms">
+                            ${formatTime(item.block_time)}
+                            ${state.currentRatingPage === 1 && index < 3 ? 
+                                `<span class="medal-icon">${['🥇','🥈','🥉'][index]}</span>` : ''}
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+        
         html += `
                     </tbody>
                 </table>
+                <div class="table-footer">
+                    Showing ${data.data.length} of ${data.meta.total} records
+                </div>
             </div>
         `;
     } else {
-        // Для Classic и Speedrun
-        const columnTitle = state.currentRatingMode === 'classic' ? 'SCORE' : 'TIME';
-        const tableData = Array.isArray(data.data) ? data.data : Object.values(data.data);
-        
+        // Рендеринг для Classic и Speedrun режимов
         html = `
             <div class="rating-table-container">
                 <table class="rating-table">
                     <thead>
                         <tr>
-                            <th width="15%">RANK</th>
-                            <th width="40%">PLAYER</th>
-                            <th width="45%">${columnTitle}</th>
+                            <th width="15%">Rank</th>
+                            <th width="35%">Player</th>
+                            <th width="${state.currentRatingMode === 'classic' ? '50%' : '50%'}">
+                                ${state.currentRatingMode === 'classic' ? 'Score' : 'Time'}
+                            </th>
                         </tr>
                     </thead>
                     <tbody>
         `;
-
-        tableData.forEach((item, index) => {
-            const globalIndex = (state.currentRatingPage - 1) * state.ratingPerPage + index + 1;
-            const isCurrentUser = state.currentUser && item.user_id === state.currentUser.id;
-            const medal = state.currentRatingPage === 1 && index < 3 ? 
-                ['🥇','🥈','🥉'][index] : '';
-            
+        
+        if (data.data.length === 0) {
             html += `
                 <tr>
-                    <td>${medal} ${globalIndex}</td>
-                    <td>${item.username}${isCurrentUser ? ' <span class="you-badge">(YOU)</span>' : ''}</td>
-                    <td>
-                        ${state.currentRatingMode === 'classic' 
-                            ? item.score.toLocaleString() 
-                            : formatTime(item.time)}
-                    </td>
+                    <td colspan="3" class="no-data">No records found</td>
                 </tr>
             `;
-        });
-
+        } else {
+            data.data.forEach((item, index) => {
+                const globalIndex = (state.currentRatingPage - 1) * state.ratingPerPage + index + 1;
+                const isCurrentUser = state.currentUser && item.user_id === state.currentUser.id;
+                let rowClass = '';
+                
+                // Медали только для топ-3 на первой странице
+                if (state.currentRatingPage === 1 && index < 3) {
+                    rowClass = `medal-${index + 1}`;
+                }
+                if (isCurrentUser) {
+                    rowClass = 'current-user';
+                }
+                
+                html += `<tr class="${rowClass}">`;
+                html += `<td>${globalIndex}</td>`;
+                html += `<td class="player-name" title="${item.username}">
+                    ${item.username}
+                    ${isCurrentUser ? ' (You)' : ''}
+                </td>`;
+                
+                if (state.currentRatingMode === 'classic') {
+                    html += `<td class="score-value">${item.score.toLocaleString()}</td>`;
+                } else {
+                    html += `<td class="time-value">${formatTime(item.time)}</td>`;
+                }
+                
+                html += '</tr>';
+            });
+        }
+        
         html += `
                     </tbody>
                 </table>
+                <div class="table-footer">
+                    Showing ${data.data.length} of ${data.meta.total} records
+                </div>
             </div>
         `;
     }
-
-    html += `
-        <div class="table-footer">
-            Showing ${Array.isArray(data.data) ? data.data.length : Object.keys(data.data).length} 
-            of ${data.meta?.total || 'unknown'} records
-            ${isBlocksMode ? `for block ${state.currentBlock || 8}` : ''}
-        </div>
-    `;
-
+    
     elements.ratingContent.innerHTML = html;
-
-    // Принудительное применение стилей для текущего пользователя
-    setTimeout(() => {
-        if (state.currentUser) {
-            document.querySelectorAll('.rating-table tr').forEach(row => {
-                if (row.textContent.includes(state.currentUser.username)) {
-                    // Применяем стили к строке
-                    row.style.backgroundColor = '#edc22e';
-                    row.style.color = '#776e65';
-                    row.style.fontWeight = 'bold';
-                    
-                    // Применяем стили ко всем ячейкам в строке
-                    Array.from(row.cells).forEach(cell => {
-                        cell.style.backgroundColor = '#edc22e';
-                        cell.style.color = '#776e65';
-                        cell.style.fontWeight = 'bold';
-                    });
-
-                    // Стили для бейджа (YOU)
-                    const youBadge = row.querySelector('.you-badge');
-                    if (youBadge) {
-                        youBadge.style.color = '#776e65';
-                        youBadge.style.fontWeight = 'bold';
-                    }
-                }
-            });
-        }
-    }, 100);
 }
 
 // Показать ошибку
@@ -2065,41 +2112,31 @@ function togglePassword(inputId, icon) {
 }
 
 function showGameOverModal(isWin, score) {
+    // Создаем модальное окно
     const modal = document.createElement('div');
-    modal.className = `game-over-modal classic-result ${isWin ? 'win' : 'lose'}`;
-    
-    const isNewRecord = state.currentUser ? score === state.bestScore : score === parseInt(localStorage.getItem('bestScore'));
+    modal.className = 'game-over-modal';
+
+    // Определяем текст для лучшего счета
+    const bestScoreText = state.currentUser 
+        ? `Best score: ${state.bestScore || 'N/A'}`
+        : `Local best: ${state.bestScore || 'N/A'}`;
     
     modal.innerHTML = `
         <div class="modal-content">
-            <h2>${isWin ? 'You Won! 🎉' : 'Game Over!'}</h2>
-            
-            <div class="score-display your-score ${isNewRecord ? 'new-record' : ''}">
-                <span class="score-label">Your Score</span>
-                <span class="score-value">${score.toLocaleString()}</span>
-                <div class="score-decoration top-left"></div>
-                <div class="score-decoration bottom-right"></div>
-                ${isNewRecord ? '<div class="record-badge">New Record!</div>' : ''}
-            </div>
-            
-            <div class="score-display best-score">
-                <span class="score-label">${state.currentUser ? 'Best Score' : 'Local Best'}</span>
-                <span class="score-value">${state.bestScore ? state.bestScore.toLocaleString() : 'N/A'}</span>
-            </div>
-            
-            ${isWin ? '<div class="celebration-emoji">🏆</div>' : ''}
-            
+            <h2>${isWin ? 'You Won!' : 'Game Over!'}</h2>
+            <p>Your score: ${score}</p>
+            <p>${bestScoreText}</p>
             <div class="modal-buttons">
-                <button id="restart-game">Play Again</button>
-                <button id="return-to-menu">Main Menu</button>
-                ${state.currentUser ? '<button id="view-best-results">My Stats</button>' : ''}
+                <button id="restart-game">Restart</button>
+                <button id="return-to-menu">Menu</button>
+                ${state.currentUser ? '<button id="view-best-results">Best Results</button>' : ''}
             </div>
         </div>
     `;
     
     document.body.appendChild(modal);
     
-    // Обработчики событий
+    // Обработчики для кнопок
     document.getElementById('restart-game').addEventListener('click', () => {
         modal.remove();
         resetGame();
@@ -2118,51 +2155,30 @@ function showGameOverModal(isWin, score) {
     }
 }
 
+// Функция для отображения результатов Speedrun
 function showSpeedrunResultModal(isWin, time) {
     const modal = document.createElement('div');
-    modal.className = `game-over-modal speedrun-result ${isWin ? 'win' : 'lose'}`;
-    
-    const bestTime = state.currentUser ? (state.bestBlockTimes['2048']?.formatted || 'N/A') : 'N/A';
-    const isNewRecord = isWin && state.currentUser && (!state.bestBlockTimes['2048'] || 
-        (Date.now() - state.startTime) < (state.bestBlockTimes['2048']?.time || Infinity));
+    modal.className = 'game-over-modal';
     
     modal.innerHTML = `
         <div class="modal-content">
-            <h2>${isWin ? 'Victory! ⚡' : 'Time Over!'}</h2>
-            
-            <div class="score-display your-score ${isNewRecord ? 'new-record' : ''}">
-                <span class="score-label">Your Time</span>
-                <span class="score-value">${time}</span>
-                <div class="score-decoration top-left"></div>
-                <div class="score-decoration bottom-right"></div>
-                ${isNewRecord ? '<div class="record-badge">New Best Time!</div>' : ''}
+            <h2>${isWin ? 'You Won!' : 'Time Over!'}</h2>
+            <p>Your time: ${time}</p>
+            ${state.currentUser ? `<p>Best time: ${state.bestBlockTimes['2048']?.formatted || 'N/A'}</p>` : ''}
+            <div class="block-times-summary">
+                ${generateBlockTimesHTML()}
             </div>
-            
-            ${state.currentUser ? `
-            <div class="score-display best-score">
-                <span class="score-label">Best Time</span>
-                <span class="score-value">${bestTime}</span>
-            </div>
-            ` : ''}
-            
-            <div class="progress-section">
-            <h3>Your Progress</h3>
-            ${generateBlockTimesHTML()}
-        </div>
-            
-            ${isWin ? '<div class="celebration-emoji">🚀</div>' : ''}
-            
             <div class="modal-buttons">
-                <button id="restart-game">Try Again</button>
-                <button id="return-to-menu">Main Menu</button>
-                ${state.currentUser ? '<button id="view-best-results">My Stats</button>' : ''}
+                <button id="restart-game">Restart</button>
+                <button id="return-to-menu">Menu</button>
+                ${state.currentUser ? '<button id="view-best-results">Best Results</button>' : ''}
             </div>
         </div>
     `;
     
     document.body.appendChild(modal);
     
-    // Обработчики событий
+    // Обработчики событий для кнопок
     document.getElementById('restart-game').addEventListener('click', () => {
         modal.remove();
         resetGame();
@@ -2184,28 +2200,19 @@ function showSpeedrunResultModal(isWin, time) {
 // Вспомогательная функция для генерации HTML с временем блоков
 function generateBlockTimesHTML() {
     if (!state.blockTimes || Object.keys(state.blockTimes).length === 0) {
-        return '<div class="no-blocks">No blocks reached yet</div>';
+        return '<p>No blocks reached</p>';
     }
 
-    const blocks = [8, 16, 32, 64, 128, 256, 512, 1024, 2048];
-    let html = '<div class="progress-grid">';
-    
-    blocks.forEach(block => {
-        if (state.blockTimes[block]) {
-            const time = formatTime(state.blockTimes[block]);
-            const isMilestone = block === 2048;
-            
-            html += `
-                <div class="progress-block ${isMilestone ? 'milestone' : ''} tile-color-${block}">
-                    <div class="block-value">${block}</div>
-                    <div class="block-time">${time}</div>
-                    ${isMilestone ? '<div class="milestone-badge">★</div>' : ''}
-                </div>
-            `;
-        }
+    let html = '<h3>Block Times:</h3><ul class="block-times-list">';
+    const sortedBlocks = Object.entries(state.blockTimes)
+        .sort(([a], [b]) => parseInt(a) - parseInt(b));
+
+    sortedBlocks.forEach(([block, time]) => {
+        html += `<li>${block}: ${formatTime(time)}</li>`;
     });
-    
-    return html + '</div>';
+
+    html += '</ul>';
+    return html;
 }
 
 function validatePassword(password) {
@@ -2233,275 +2240,4 @@ document.addEventListener('DOMContentLoaded', () => {
     if (soundState.isMusicEnabled) {
         playMenuMusic(); // Запуск музыки главного меню при загрузке
     }
-});
-
-class FallingTiles {
-  constructor() {
-    this.container = document.getElementById('falling-tiles-container');
-    this.tiles = [];
-    this.mergeQueue = [];
-    this.colors = {
-      2: '#eee4da', 4: '#ede0c8', 8: '#f2b179',
-      16: '#f59563', 32: '#f67c5f', 64: '#f65e3b',
-      128: '#edcf72', 256: '#edcc61', 512: '#edc850',
-      1024: '#edc53f', 2048: '#edc22e',
-      'win': '#9c27b0', // Фиолетовый для победы
-      'lose': '#00bcd4'  // Голубой для поражения
-    };
-    
-    // Вероятности появления (увеличена вероятность крупных плиток)
-    this.probabilities = {
-      2: 0.25, 4: 0.2, 8: 0.15, 16: 0.12, 32: 0.1,
-      64: 0.08, 128: 0.05, 256: 0.03, 512: 0.02,
-      1024: 0.01, 2048: 0.005,
-      'win': 0.02, 'lose': 0.02
-    };
-    
-    this.init();
-    this.startAnimation();
-    this.setupCollisionDetection();
-  }
-
-  init() {
-    this.container.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: -1;
-      overflow: hidden;
-      pointer-events: none;
-      opacity: 0.2;
-    `;
-  }
-
-  getRandomTileType() {
-    const random = Math.random();
-    let cumulative = 0;
-    
-    for (const [type, prob] of Object.entries(this.probabilities)) {
-      cumulative += prob;
-      if (random <= cumulative) return type;
-    }
-    
-    return '2'; // fallback
-  }
-
-  createTile() {
-    const type = this.getRandomTileType();
-    // Увеличенные размеры плиток
-    const size = type === 'win' ? 120 : 
-                type === 'lose' ? 140 : 
-                60 + (parseInt(type) || 0) / 10; // Базовый размер увеличен
-    
-    const tile = document.createElement('div');
-    tile.className = 'falling-tile';
-    tile.dataset.type = type;
-    tile.dataset.value = type;
-    tile.innerHTML = type;
-    
-    const animationDuration = 6 + Math.random() * 10; // Более быстрое падение
-    
-    tile.style.cssText = `
-      position: absolute;
-      width: ${size}px;
-      height: ${size}px;
-      background: ${this.colors[type]};
-      color: ${type === 'win' ? '#fff' : 
-              type === 'lose' ? '#fff' : 
-              parseInt(type) > 4 ? '#f9f6f2' : '#776e65'};
-      font-size: ${size/2}px;
-      font-weight: bold;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 8px;
-      left: ${Math.random() * 100}%;
-      top: -${size}px;
-      animation: fall ${animationDuration}s linear forwards;
-      transform: rotate(${Math.random() * 20 - 10}deg);
-      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-      will-change: transform;
-      z-index: ${type === 'win' ? 10 : 
-                type === 'lose' ? 11 : 
-                parseInt(type) || 1};
-    `;
-
-    this.container.appendChild(tile);
-    const tileObj = {
-      element: tile,
-      type: type,
-      x: parseFloat(tile.style.left),
-      y: -size,
-      width: size,
-      height: size,
-      merged: false,
-      animationDuration: animationDuration
-    };
-    
-    tile.addEventListener('animationend', () => {
-      this.handleTileLanded(tileObj);
-    });
-    
-    this.tiles.push(tileObj);
-    return tileObj;
-  }
-
-  handleTileLanded(tile) {
-    tile.element.remove();
-    this.tiles = this.tiles.filter(t => t !== tile);
-    this.createTile();
-  }
-
-  setupCollisionDetection() {
-    setInterval(() => {
-      this.checkCollisions();
-      this.processMergeQueue();
-    }, 100);
-  }
-
-  checkCollisions() {
-    for (let i = 0; i < this.tiles.length; i++) {
-      for (let j = i + 1; j < this.tiles.length; j++) {
-        const tile1 = this.tiles[i];
-        const tile2 = this.tiles[j];
-        
-        if (tile1.merged || tile2.merged) continue;
-        
-        if (this.isColliding(tile1, tile2)) {
-          this.handleCollision(tile1, tile2);
-        }
-      }
-    }
-  }
-
-  isColliding(tile1, tile2) {
-    const rect1 = tile1.element.getBoundingClientRect();
-    const rect2 = tile2.element.getBoundingClientRect();
-    
-    return !(
-      rect1.right < rect2.left || 
-      rect1.left > rect2.right || 
-      rect1.bottom < rect2.top || 
-      rect1.top > rect2.bottom
-    );
-  }
-
-  handleCollision(tile1, tile2) {
-    if (tile1.type === 'win' || tile1.type === 'lose' ||
-        tile2.type === 'win' || tile2.type === 'lose') {
-      return;
-    }
-    
-    if (tile1.type === tile2.type) {
-      tile1.merged = true;
-      tile2.merged = true;
-      this.mergeQueue.push({ tile1, tile2 });
-    }
-  }
-
-  processMergeQueue() {
-    while (this.mergeQueue.length > 0) {
-      const { tile1, tile2 } = this.mergeQueue.pop();
-      
-      tile1.element.style.transition = 'all 0.3s ease-out';
-      tile2.element.style.transition = 'all 0.3s ease-out';
-      
-      const centerX = (tile1.x + tile2.x) / 2;
-      const centerY = (tile1.y + tile2.y) / 2;
-      
-      tile1.element.style.left = `${centerX}%`;
-      tile1.element.style.top = `${centerY}px`;
-      tile2.element.style.left = `${centerX}%`;
-      tile2.element.style.top = `${centerY}px`;
-      
-      setTimeout(() => {
-        this.mergeTiles(tile1, tile2);
-      }, 300);
-    }
-  }
-
-  mergeTiles(tile1, tile2) {
-    const newValue = parseInt(tile1.type) * 2;
-    
-    tile1.element.remove();
-    tile2.element.remove();
-    this.tiles = this.tiles.filter(t => t !== tile1 && t !== tile2);
-    
-    if (newValue <= 2048) {
-      const newTile = document.createElement('div');
-      newTile.className = 'falling-tile merged-tile';
-      newTile.dataset.type = newValue;
-      newTile.dataset.value = newValue;
-      newTile.innerHTML = newValue;
-      
-      const size = 60 + newValue / 10; // Увеличенный размер
-      const centerX = (tile1.x + tile2.x) / 2;
-      const animationDuration = 6 + Math.random() * 10;
-      
-      newTile.style.cssText = `
-        position: absolute;
-        width: ${size}px;
-        height: ${size}px;
-        background: ${this.colors[newValue]};
-        color: ${newValue > 4 ? '#f9f6f2' : '#776e65'};
-        font-size: ${size/2}px;
-        font-weight: bold;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 8px;
-        left: ${centerX}%;
-        top: ${tile1.y}px;
-        animation: fall ${animationDuration}s linear forwards;
-        transform: scale(0);
-        box-shadow: 0 0 25px rgba(0,0,0,0.3);
-        z-index: ${newValue};
-      `;
-      
-      setTimeout(() => {
-        newTile.style.transform = 'scale(1) rotate(0deg)';
-      }, 10);
-      
-      this.container.appendChild(newTile);
-      const tileObj = {
-        element: newTile,
-        type: newValue.toString(),
-        x: centerX,
-        y: tile1.y,
-        width: size,
-        height: size,
-        merged: false,
-        animationDuration: animationDuration
-      };
-      
-      newTile.addEventListener('animationend', () => {
-        this.handleTileLanded(tileObj);
-      });
-      
-      this.tiles.push(tileObj);
-    }
-  }
-
-  startAnimation() {
-    // Создаем больше плиток при старте
-    for (let i = 0; i < 15; i++) { // Было 10, стало 25
-      setTimeout(() => this.createTile(), i * 200); // Уменьшена задержка
-    }
-        
-    // Чаще создаем новые плитки
-    this.interval = setInterval(() => {
-      if (this.tiles.length < 35) { // Было 20, стало 50
-        this.createTile();
-      }
-    }, 600); // Было 1000, стало 400
-  }
-}
-
-// Инициализация
-window.addEventListener('load', () => {
-  if (window.innerWidth > 768) {
-    new FallingTiles();
-  }
 });
