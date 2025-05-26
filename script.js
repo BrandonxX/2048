@@ -1938,7 +1938,7 @@ function renderRatingData(data) {
                     <td>${medal} ${globalIndex}</td>
                     <td class="player-name">
                         ${item.username}
-                        ${isCurrentUser ? '<span class="you-badge">(YOU)</span>' : ''}
+                        ${isCurrentUser ? '<span class="you-badge"></span>' : ''}
                     </td>
                     <td>${item.block_value}</td>
                     <td>${formatTime(item.block_time)}</td>
@@ -2193,7 +2193,7 @@ function generateBlockTimesHTML() {
     blocks.forEach(block => {
         if (state.blockTimes[block]) {
             const time = formatTime(state.blockTimes[block]);
-            const isMilestone = block === 128 || block === 512 || block === 2048;
+            const isMilestone = block === 2048;
             
             html += `
                 <div class="progress-block ${isMilestone ? 'milestone' : ''} tile-color-${block}">
